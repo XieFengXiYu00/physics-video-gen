@@ -99,7 +99,7 @@ interface GeminiResponse {
 
 // ─── Client ──────────────────────────────────────────────────────────────────
 
-const DEFAULT_MODEL = "gemini-flash-latest";
+const DEFAULT_MODEL = "gemini-2.0-flash";
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export interface GeminiCallOptions {
