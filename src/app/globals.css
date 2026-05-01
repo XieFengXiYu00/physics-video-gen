@@ -1,26 +1,215 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #03060f;
+  --foreground: #e2e8f0;
+  --accent: #22d3ee;
+  --accent-2: #a855f7;
+  --accent-3: #3b82f6;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ─── Tech Background ──────────────────────────────────────────────────── */
+
+.tech-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at top, rgba(56, 189, 248, 0.08), transparent 60%),
+    radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.06), transparent 70%),
+    #03060f;
+}
+
+.tech-bg-grid {
+  position: absolute;
+  inset: -50% -50% -50% -50%;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 80%);
+  animation: tech-grid-drift 60s linear infinite;
+}
+
+@keyframes tech-grid-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(56px, 56px, 0); }
+}
+
+.tech-bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+}
+.tech-bg-glow-1 {
+  width: 540px; height: 540px;
+  top: -120px; left: -100px;
+  background: radial-gradient(circle, #22d3ee 0%, transparent 70%);
+  animation: tech-float-1 18s ease-in-out infinite;
+}
+.tech-bg-glow-2 {
+  width: 600px; height: 600px;
+  bottom: -160px; right: -120px;
+  background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+  animation: tech-float-2 22s ease-in-out infinite;
+}
+@keyframes tech-float-1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%     { transform: translate(80px, 60px) scale(1.1); }
+}
+@keyframes tech-float-2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%     { transform: translate(-60px, -40px) scale(1.15); }
+}
+
+.tech-bg-scan {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 200px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(34, 211, 238, 0.12) 45%,
+    rgba(34, 211, 238, 0.18) 50%,
+    rgba(34, 211, 238, 0.12) 55%,
+    transparent 100%
+  );
+  animation: tech-scan 10s linear infinite;
+  opacity: 0.6;
+}
+@keyframes tech-scan {
+  0%   { transform: translateY(-220px); }
+  100% { transform: translateY(110vh); }
+}
+
+.tech-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(3,6,15,0.7) 100%);
+}
+
+/* ─── Reusable utility classes ─────────────────────────────────────────── */
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.4));
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+    0 8px 32px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+/* Animated gradient border for "primary" panel */
+.glow-border {
+  position: relative;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.55));
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+.glow-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #22d3ee, #6366f1, #a855f7, #22d3ee);
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: glow-border-rotate 8s linear infinite;
+  pointer-events: none;
+}
+@keyframes glow-border-rotate {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* Glowing text */
+.text-glow {
+  text-shadow: 0 0 12px currentColor;
+}
+.text-glow-strong {
+  text-shadow: 0 0 8px currentColor, 0 0 24px currentColor;
+}
+
+/* Animated gradient text */
+.text-gradient {
+  background: linear-gradient(120deg, #22d3ee, #818cf8, #a855f7, #22d3ee);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  animation: text-gradient-shift 8s linear infinite;
+}
+@keyframes text-gradient-shift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* Pulse ring (status dots) */
+.pulse-ring {
+  position: relative;
+}
+.pulse-ring::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0;
+  animation: pulse-ring 2s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0%   { opacity: 0.7; transform: scale(0.8); }
+  100% { opacity: 0;   transform: scale(2.0); }
+}
+
+/* Scanning line on input */
+.scan-on-focus:focus-within {
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.5),
+    0 0 24px rgba(34, 211, 238, 0.25);
+}
+
+/* Mono numeric font */
+.font-mono-tech {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, Consolas, monospace;
+  font-feature-settings: "tnum", "ss01";
+}
+
+/* Section label (uppercase with bracket markers) */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.section-label::before {
+  content: "▸";
+  opacity: 0.7;
 }

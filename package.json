@@ -6,12 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "remotion:preview": "remotion preview src/remotion/Root.tsx",
+    "remotion:render": "remotion render src/remotion/Root.tsx PhysicsVideo --output out/physics.mp4"
   },
   "dependencies": {
+    "@remotion/cli": "^4.0.454",
+    "@remotion/player": "^4.0.454",
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-dropzone": "^15.0.0",
+    "remotion": "^4.0.454",
+    "undici": "^8.1.0",
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

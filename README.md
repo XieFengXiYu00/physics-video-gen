@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PHYSIQ.AI · 理科解题视频生成器
 
-## Getting Started
+AI 双 Agent 驱动，把初高中理科题目（物理 / 数学 / 化学）的截图或文字一键变成动画解题视频。
 
-First, run the development server:
+- **Agent 1 — Teacher** · Gemini Flash 视觉模型分析题目，输出结构化 JSON
+- **Agent 2 — Video Planner** · 把 JSON 转成 Remotion 场景脚本
+- **Remotion 4** · 浏览器内实时渲染受力箭头、解题步骤动画
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 快速开始（本地）
+
+### 1. 配置 Gemini API Key
+
+编辑 `.env.local`：
+
+```env
+GEMINI_API_KEY=AIzaSy.....
+# 可选：默认 gemini-flash-latest
+# GEMINI_MODEL=gemini-flash-latest
+# 可选：公司网络代理
+# HTTPS_PROXY=http://10.158.100.2:8080
+# HTTP_PROXY=http://10.158.100.2:8080
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+去 [Google AI Studio](https://aistudio.google.com/apikey) 领免费 Key（Gemini Flash 有慷慨的免费额度）。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. 启动
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+访问 http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+## 部署到 Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+完全兼容，零配置：
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. 把代码 push 到 GitHub
+2. 去 [vercel.com/new](https://vercel.com/new) 选这个仓库
+3. **Environment Variables** 填：
+   - `GEMINI_API_KEY` = 你的 Key
+   - （Vercel 服务器走公网，不需要 `HTTPS_PROXY`）
+4. Deploy
 
-## Deploy on Vercel
+> ⚠ `.env.local` 不会被推到 Git（已在 `.gitignore`）。Vercel 上的环境变量在 Project Settings → Environment Variables 配置。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 项目结构
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/
+│   ├── page.tsx                  # 入口（仅装配）
+│   ├── layout.tsx                # 全局 + TechBackground
+│   ├── globals.css               # 科技风样式 + 动画
+│   └── api/
+│       ├── analyze/route.ts      # Agent 1
+│       └── generate/route.ts     # Agent 2
+├── agents/
+│   ├── teacher.ts                # Gemini function-calling
+│   └── videoPlanner.ts           # 计划 → 场景配置
+├── components/
+│   ├── TechBackground.tsx        # 动画网格 + 光晕 + 扫描线
+│   ├── Header.tsx / Hero.tsx
+│   ├── InputCard.tsx             # dropzone + 粘贴 + 取消按钮
+│   ├── PlanSummary.tsx
+│   ├── VideoPanel.tsx            # @remotion/player
+│   └── ui/Badge.tsx
+├── lib/
+│   ├── constants.ts              # 颜色 / 时长 / 类型枚举（单一来源）
+│   ├── schemas.ts                # zod 校验
+│   ├── llm.ts                    # Gemini 客户端 + 代理支持
+│   ├── image.ts                  # 客户端图片压缩
+│   └── usePipeline.ts            # 双 Agent 流水线 + AbortController
+└── remotion/
+    ├── Root.tsx                  # CLI 渲染入口
+    ├── PhysicsVideo.tsx          # <Series> 场景路由
+    └── components/
+        ├── SceneShell.tsx
+        ├── ProblemScene.tsx
+        ├── ForceArrow.tsx
+        ├── FreeBodyDiagram.tsx
+        ├── SolutionStep.tsx
+        └── AnswerScene.tsx
+```
+
+## 命令
+
+```bash
+npm run dev                  # Next.js 开发服务器
+npm run build                # 生产构建
+npm run remotion:preview     # Remotion Studio 预览
+npm run remotion:render      # 渲染为 MP4 → out/physics.mp4
+```
+
+## 架构
+
+```
+截图 / 文字
+    ↓ base64 + text
+[Agent 1] teacher.ts  →  Gemini Flash function-calling
+    ↓ TeacherPlan JSON（zod 校验）
+[Agent 2] videoPlanner.ts（纯函数）
+    ↓ SceneConfig JSON
+@remotion/player（浏览器实时渲染）
+    ↓ 每帧 useCurrentFrame() → spring/interpolate → SVG
+解题动画视频
+```
+
+## 技术栈
+
+- **Next.js 16** · App Router · Turbopack
+- **Tailwind CSS 4** · 自定义动画
+- **Remotion 4** · React 视频
+- **Google Gemini Flash** · 视觉分析（支持 function calling）
+- **undici** · proxy-aware fetch
+- **zod** · 运行时校验
+- **react-dropzone** · 图片拖拽
