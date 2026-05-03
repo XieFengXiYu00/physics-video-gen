@@ -37,6 +37,7 @@ const SYSTEM_PROMPT = `你是一位经验丰富的中国高中物理老师，专
 - difficulty: ${DIFFICULTIES.join(" / ")}
 - objects[].shape: ${SHAPES.join(" / ")}
 - forces[].type: ${FORCE_TYPES.join(" / ")}
+- visual_storyboard: 适合 Remotion 动画的视频分镜。每步包含 title、narration、visual_action，可选 equation、highlights、groups。
 
 坐标系约定：
 - objects[].position 用 0-1 相对坐标，(0,0)=左上，(1,1)=右下
@@ -47,13 +48,22 @@ ${colorGuidance}
 
 斜面题：斜面用 shape:"wedge"，滑块用 shape:"block"。
 受力分析时合理排布物体在画面中的位置（避免居中重叠）。
-mass 字段统一用字符串表示，例如 "10" 或 "10kg"。`;
+mass 字段统一用字符串表示，例如 "10" 或 "10kg"。
+
+视频化要求：
+- 你不是只给答案，而是要像寓教于乐的老师一样，把推理拆成短视频可展示的分镜。
+- visual_storyboard 输出 4-7 步，适合逐屏播放和字幕旁白。
+- 每步 narration 用口语化中文，简洁但要解释为什么这么做。
+- visual_action 只能使用：show_items / show_equation / distribute_items / compare_cases / highlight_answer / explain。
+- 数学、组合、分配类题目要优先用 visual_storyboard 表达“展示对象、列式、尝试或排除、构造方案、高亮答案”。
+- groups 用于表达分组/分配，例如 [{"label":"同学A","items":["10元","5元"],"sum":"15元"}]。
+- highlights 用于表达画面中应强调的数字、结论或关键词。`;
 
 /** Same constraints as emit_plan，但要求纯 JSON（用于工具调用失败时的回退）。 */
 const SYSTEM_PROMPT_JSON = `${SYSTEM_PROMPT}
 
 【本轮输出】不要使用函数调用。请直接输出唯一一个 JSON 对象（UTF-8），顶层字段名与 emit_plan 参数一致：
-problem_summary, subject, problem_type, difficulty, given, unknowns, objects, forces, solution_steps, answer。
+problem_summary, subject, problem_type, difficulty, given, unknowns, objects, forces, solution_steps, visual_storyboard, answer。
 given 必须是对象：键为已知量符号（字符串），值为带单位的数值字符串。
 不要输出 markdown 代码围栏或其它说明文字。`;
 
@@ -144,6 +154,56 @@ const PLAN_TOOL: GeminiTool = {
                 result: { type: "STRING" },
               },
               required: ["step", "description"],
+            },
+          },
+          visual_storyboard: {
+            type: "ARRAY",
+            description:
+              "面向 Remotion 短视频的分镜脚本。每步都是一屏动画的意图和旁白。",
+            items: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING", description: "分镜标题" },
+                narration: {
+                  type: "STRING",
+                  description: "适合字幕/旁白的中文讲解，一到两句话",
+                },
+                visual_action: {
+                  type: "STRING",
+                  enum: [
+                    "show_items",
+                    "show_equation",
+                    "distribute_items",
+                    "compare_cases",
+                    "highlight_answer",
+                    "explain",
+                  ],
+                },
+                equation: {
+                  type: "STRING",
+                  description: "本屏需要展示的公式、算式或关键等式",
+                },
+                highlights: {
+                  type: "ARRAY",
+                  description: "画面上需要突出显示的关键词或数字",
+                  items: { type: "STRING" },
+                },
+                groups: {
+                  type: "ARRAY",
+                  description:
+                    "分组/分配动画数据，例如每位同学拿到哪些车票和总和",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      label: { type: "STRING" },
+                      items: { type: "ARRAY", items: { type: "STRING" } },
+                      sum: { type: "STRING" },
+                    },
+                    required: ["label", "items"],
+                  },
+                },
+              },
+              required: ["title", "narration", "visual_action"],
             },
           },
           answer: { type: "STRING" },
