@@ -85,6 +85,10 @@ export interface GeminiRequest {
     temperature?: number;
     maxOutputTokens?: number;
     responseMimeType?: string;
+    thinkingConfig?: {
+      thinkingBudget?: number;
+      includeThoughts?: boolean;
+    };
   };
 }
 

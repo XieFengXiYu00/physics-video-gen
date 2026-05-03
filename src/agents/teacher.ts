@@ -197,14 +197,29 @@ export async function runTeacherAgent(
           allowedFunctionNames: ["emit_plan"],
         },
       },
-      generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     },
     { signal: opts.signal }
   );
 
   const call = extractFunctionCall(response);
   if (!call) {
-    throw new Error("Gemini 没有调用 emit_plan 函数");
+    const cand = response.candidates?.[0];
+    const finish = cand?.finishReason ?? "UNKNOWN";
+    const textParts = (cand?.content?.parts ?? [])
+      .map((p) => ("text" in p ? p.text : ""))
+      .filter(Boolean)
+      .join(" | ");
+    console.error("[teacher] no functionCall. finishReason:", finish, "text:", textParts);
+    throw new Error(
+      `Gemini 没有调用 emit_plan 函数（finishReason=${finish}）${
+        textParts ? `：${textParts.slice(0, 200)}` : ""
+      }`
+    );
   }
 
   // Convert array-of-pairs back to Record<string, string> for `given`
