@@ -92,7 +92,7 @@ export interface GeminiRequest {
   };
 }
 
-interface GeminiResponse {
+export interface GeminiResponse {
   candidates?: Array<{
     content?: GeminiContent;
     finishReason?: string;
@@ -154,4 +154,17 @@ export function extractFunctionCall(
     if ("functionCall" in p) return p.functionCall;
   }
   return null;
+}
+
+export function getFinishReason(res: GeminiResponse): string | undefined {
+  return res.candidates?.[0]?.finishReason;
+}
+
+/** Concatenate plain text parts from the first candidate (JSON mode, errors). */
+export function extractModelText(res: GeminiResponse): string {
+  const parts = res.candidates?.[0]?.content?.parts ?? [];
+  return parts
+    .map((p) => ("text" in p ? p.text : ""))
+    .filter(Boolean)
+    .join("");
 }
