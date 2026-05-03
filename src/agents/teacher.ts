@@ -364,6 +364,7 @@ export interface TeacherAgentOptions {
 export async function runTeacherAgent(
   problemText: string,
   imageBase64?: string,
+  referenceAnswer?: string,
   opts: TeacherAgentOptions = {}
 ): Promise<TeacherPlan> {
   const userContent: GeminiContent = { role: "user", parts: [] };
@@ -376,11 +377,16 @@ export async function runTeacherAgent(
       },
     });
   }
-  userContent.parts.push({
-    text:
-      problemText.trim() ||
-      "请分析图片中的题目，调用 emit_plan 函数输出完整解题分析。",
-  });
+
+  let userText =
+    problemText.trim() ||
+    "请分析图片中的题目，调用 emit_plan 函数输出完整解题分析。";
+
+  if (referenceAnswer?.trim()) {
+    userText += `\n\n【参考答案】${referenceAnswer.trim()}\n请根据上述参考答案，推导完整的解题过程和视频分镜。`;
+  }
+
+  userContent.parts.push({ text: userText });
 
   let response = await callGemini(buildToolRequest(userContent, 0.2), opts);
   let plan = tryParsePlanFromResponse(response);
