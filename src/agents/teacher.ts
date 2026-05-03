@@ -3,8 +3,12 @@ import { teacherPlanSchema } from "@/lib/schemas";
 import {
   callGemini,
   extractFunctionCall,
+  extractModelText,
   GeminiContent,
+  GeminiRequest,
+  GeminiResponse,
   GeminiTool,
+  getFinishReason,
 } from "@/lib/llm";
 import {
   DIFFICULTIES,
@@ -45,7 +49,16 @@ ${colorGuidance}
 受力分析时合理排布物体在画面中的位置（避免居中重叠）。
 mass 字段统一用字符串表示，例如 "10" 或 "10kg"。`;
 
+/** Same constraints as emit_plan，但要求纯 JSON（用于工具调用失败时的回退）。 */
+const SYSTEM_PROMPT_JSON = `${SYSTEM_PROMPT}
+
+【本轮输出】不要使用函数调用。请直接输出唯一一个 JSON 对象（UTF-8），顶层字段名与 emit_plan 参数一致：
+problem_summary, subject, problem_type, difficulty, given, unknowns, objects, forces, solution_steps, answer。
+given 必须是对象：键为已知量符号（字符串），值为带单位的数值字符串。
+不要输出 markdown 代码围栏或其它说明文字。`;
+
 // ─── Function-calling schema (Gemini OpenAPI subset) ─────────────────────────
+// 注意：不要在 schema 里使用 pattern 等复杂约束，否则容易触发 MALFORMED_FUNCTION_CALL。
 
 const PLAN_TOOL: GeminiTool = {
   functionDeclarations: [
@@ -111,7 +124,11 @@ const PLAN_TOOL: GeminiTool = {
                   description: "表达式或数值",
                 },
                 angle_deg: { type: "NUMBER" },
-                color: { type: "STRING", pattern: "^#[0-9A-Fa-f]{6}$" },
+                color: {
+                  type: "STRING",
+                  description:
+                    "可选；十六进制颜色，例如 #E53935 或 #ff5722",
+                },
               },
               required: ["on", "type", "magnitude", "angle_deg"],
             },
@@ -147,6 +164,8 @@ const PLAN_TOOL: GeminiTool = {
   ],
 };
 
+const JSON_USER_SUFFIX = `\n\n【本轮】不要调用函数。仅输出一个 JSON 对象，字段与系统说明一致；given 为对象。`;
+
 // ─── Image type detection ────────────────────────────────────────────────────
 
 type SupportedMedia = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
@@ -157,6 +176,123 @@ function detectMediaType(base64: string): SupportedMedia {
   if (base64.startsWith("R0lGO")) return "image/gif";
   if (base64.startsWith("UklGR")) return "image/webp";
   return "image/jpeg";
+}
+
+// ─── Args normalization & validation ─────────────────────────────────────────
+
+function normalizeRawArgs(raw: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...raw };
+  if (Array.isArray(out.given)) {
+    const obj: Record<string, string> = {};
+    for (const p of out.given as Array<{ key?: unknown; value?: unknown }>) {
+      if (typeof p?.key === "string" && typeof p?.value === "string") {
+        obj[p.key] = p.value;
+      }
+    }
+    out.given = obj;
+  } else if (out.given && typeof out.given === "object" && !Array.isArray(out.given)) {
+    const g = out.given as Record<string, unknown>;
+    const fixed: Record<string, string> = {};
+    for (const [k, v] of Object.entries(g)) {
+      fixed[k] = typeof v === "string" ? v : String(v ?? "");
+    }
+    out.given = fixed;
+  }
+  if (!Array.isArray(out.unknowns)) out.unknowns = [];
+  return out;
+}
+
+function tryParsePlanFromResponse(res: GeminiResponse): TeacherPlan | null {
+  const call = extractFunctionCall(res);
+  if (!call || call.name !== "emit_plan") return null;
+  const normalized = normalizeRawArgs(call.args as Record<string, unknown>);
+  const parsed = teacherPlanSchema.safeParse(normalized);
+  if (!parsed.success) {
+    console.warn("[teacher] tool args failed zod:", parsed.error.issues);
+    return null;
+  }
+  return parsed.data as TeacherPlan;
+}
+
+function buildToolRequest(
+  userContent: GeminiContent,
+  temperature: number
+): GeminiRequest {
+  return {
+    contents: [userContent],
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    tools: [PLAN_TOOL],
+    toolConfig: {
+      functionCallingConfig: {
+        mode: "ANY",
+        allowedFunctionNames: ["emit_plan"],
+      },
+    },
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 8192,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  };
+}
+
+function appendToLastUserText(content: GeminiContent, suffix: string): GeminiContent {
+  const parts = content.parts.map((p) => ({ ...p })) as GeminiContent["parts"];
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if ("text" in p && typeof p.text === "string") {
+      parts[i] = { text: p.text + suffix };
+      break;
+    }
+  }
+  return { role: "user", parts };
+}
+
+function stripMarkdownJsonFence(s: string): string {
+  let t = s.trim();
+  const m = /^```(?:json)?\s*\r?\n?([\s\S]*?)```$/im.exec(t);
+  if (m) t = m[1].trim();
+  return t;
+}
+
+async function runTeacherPlanJsonFallback(
+  userContent: GeminiContent,
+  opts: TeacherAgentOptions
+): Promise<TeacherPlan> {
+  const uc = appendToLastUserText(userContent, JSON_USER_SUFFIX);
+  const response = await callGemini(
+    {
+      contents: [uc],
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT_JSON }] },
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+        thinkingConfig: { thinkingBudget: 0 },
+        responseMimeType: "application/json",
+      },
+    },
+    opts
+  );
+
+  const rawText = extractModelText(response);
+  const stripped = stripMarkdownJsonFence(rawText);
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(stripped);
+  } catch (e) {
+    throw new Error(
+      `JSON 回退解析失败：${e instanceof Error ? e.message : String(e)}（前 400 字：${rawText.slice(0, 400)}）`
+    );
+  }
+
+  const normalized = normalizeRawArgs(parsedJson as Record<string, unknown>);
+  const parsed = teacherPlanSchema.safeParse(normalized);
+  if (!parsed.success) {
+    throw new Error(
+      `JSON 回退校验失败：${parsed.error.issues[0]?.message ?? parsed.error.message}`
+    );
+  }
+  return parsed.data as TeacherPlan;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -186,48 +322,28 @@ export async function runTeacherAgent(
       "请分析图片中的题目，调用 emit_plan 函数输出完整解题分析。",
   });
 
-  const response = await callGemini(
-    {
-      contents: [userContent],
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      tools: [PLAN_TOOL],
-      toolConfig: {
-        functionCallingConfig: {
-          mode: "ANY",
-          allowedFunctionNames: ["emit_plan"],
-        },
-      },
-      generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
-    },
-    { signal: opts.signal }
-  );
+  let response = await callGemini(buildToolRequest(userContent, 0.2), opts);
+  let plan = tryParsePlanFromResponse(response);
+  if (plan) return plan;
 
-  const call = extractFunctionCall(response);
-  if (!call) {
-    throw new Error("Gemini 没有调用 emit_plan 函数");
-  }
+  const fr1 = getFinishReason(response);
+  console.warn("[teacher] first tool attempt failed, retrying (temp=0)", fr1);
 
-  // Convert array-of-pairs back to Record<string, string> for `given`
-  const args = { ...call.args } as Record<string, unknown>;
-  if (Array.isArray(args.given)) {
-    const obj: Record<string, string> = {};
-    for (const p of args.given as Array<{ key?: unknown; value?: unknown }>) {
-      if (typeof p?.key === "string" && typeof p?.value === "string") {
-        obj[p.key] = p.value;
-      }
-    }
-    args.given = obj;
-  }
-  // Ensure unknowns is at least an empty array (it's optional per prompt)
-  if (!Array.isArray(args.unknowns)) args.unknowns = [];
+  response = await callGemini(buildToolRequest(userContent, 0), opts);
+  plan = tryParsePlanFromResponse(response);
+  if (plan) return plan;
 
-  const parsed = teacherPlanSchema.safeParse(args);
-  if (!parsed.success) {
-    console.error("[teacher] schema validation failed:", parsed.error.issues);
+  const fr2 = getFinishReason(response);
+  console.warn("[teacher] tool path failed, JSON fallback", fr1, fr2);
+
+  try {
+    return await runTeacherPlanJsonFallback(userContent, opts);
+  } catch (fallbackErr) {
+    const textHint = extractModelText(response).slice(0, 200);
     throw new Error(
-      `分析结果格式错误：${parsed.error.issues[0]?.message ?? "unknown"}`
+      `Gemini 未能产出有效解题计划（finishReason=${fr2 ?? fr1 ?? "UNKNOWN"}）。` +
+        (fallbackErr instanceof Error ? ` ${fallbackErr.message}` : "") +
+        (textHint ? ` 片段：${textHint}` : "")
     );
   }
-
-  return parsed.data as TeacherPlan;
 }

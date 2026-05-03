@@ -85,10 +85,14 @@ export interface GeminiRequest {
     temperature?: number;
     maxOutputTokens?: number;
     responseMimeType?: string;
+    thinkingConfig?: {
+      thinkingBudget?: number;
+      includeThoughts?: boolean;
+    };
   };
 }
 
-interface GeminiResponse {
+export interface GeminiResponse {
   candidates?: Array<{
     content?: GeminiContent;
     finishReason?: string;
@@ -99,7 +103,7 @@ interface GeminiResponse {
 
 // ─── Client ──────────────────────────────────────────────────────────────────
 
-const DEFAULT_MODEL = "gemini-flash-latest";
+const DEFAULT_MODEL = "gemini-2.5-flash";
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export interface GeminiCallOptions {
@@ -150,4 +154,17 @@ export function extractFunctionCall(
     if ("functionCall" in p) return p.functionCall;
   }
   return null;
+}
+
+export function getFinishReason(res: GeminiResponse): string | undefined {
+  return res.candidates?.[0]?.finishReason;
+}
+
+/** Concatenate plain text parts from the first candidate (JSON mode, errors). */
+export function extractModelText(res: GeminiResponse): string {
+  const parts = res.candidates?.[0]?.content?.parts ?? [];
+  return parts
+    .map((p) => ("text" in p ? p.text : ""))
+    .filter(Boolean)
+    .join("");
 }
