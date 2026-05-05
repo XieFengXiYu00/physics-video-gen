@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
-import { Player } from "@remotion/player";
+import { useMemo, useState, useCallback, useRef } from "react";
+import { Player, PlayerRef } from "@remotion/player";
 import { PhysicsVideo } from "@/remotion/PhysicsVideo";
 import { SceneConfig } from "@/types/scene";
 
@@ -13,30 +13,81 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
   const inputProps = useMemo(() => ({ config: sceneConfig }), [sceneConfig]);
   const seconds = Math.round(sceneConfig.totalFrames / sceneConfig.fps);
   const [downloading, setDownloading] = useState<"video" | "pptx" | null>(null);
+  const [recordingProgress, setRecordingProgress] = useState(0);
+  const playerRef = useRef<PlayerRef>(null);
 
   const handleDownloadVideo = useCallback(async () => {
+    const player = playerRef.current;
+    if (!player) {
+      alert("播放器未就绪");
+      return;
+    }
+
     setDownloading("video");
+    setRecordingProgress(0);
+
     try {
-      const res = await fetch("/api/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sceneConfig }),
+      const container = player.getContainerNode();
+      if (!container) throw new Error("找不到播放器容器");
+
+      const canvas = container.querySelector("canvas");
+      if (!canvas) throw new Error("找不到画布元素");
+
+      const stream = canvas.captureStream(sceneConfig.fps);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "video/webm;codecs=vp9",
+        videoBitsPerSecond: 5000000,
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "渲染失败");
-      }
-      const blob = await res.blob();
+
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      const recordingPromise = new Promise<Blob>((resolve, reject) => {
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: "video/webm" });
+          resolve(blob);
+        };
+        mediaRecorder.onerror = (e) => reject(e);
+      });
+
+      player.seekTo(0);
+      player.pause();
+      
+      await new Promise((r) => setTimeout(r, 100));
+
+      mediaRecorder.start();
+      player.play();
+
+      const totalMs = (sceneConfig.totalFrames / sceneConfig.fps) * 1000;
+      const startTime = Date.now();
+
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(100, Math.round((elapsed / totalMs) * 100));
+        setRecordingProgress(progress);
+      }, 200);
+
+      await new Promise((r) => setTimeout(r, totalMs + 500));
+
+      clearInterval(progressInterval);
+      mediaRecorder.stop();
+      player.pause();
+
+      const blob = await recordingPromise;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `physics-video-${Date.now()}.mp4`;
+      a.download = `physics-video-${Date.now()}.webm`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "下载失败");
+      console.error("[video recording]", err);
+      alert(err instanceof Error ? err.message : "录制失败，请尝试使用 Chrome 浏览器");
     } finally {
       setDownloading(null);
+      setRecordingProgress(0);
     }
   }, [sceneConfig]);
 
@@ -78,6 +129,7 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
 
       <div className="rounded-xl overflow-hidden border border-fuchsia-500/20 shadow-[0_0_36px_rgba(217,70,239,0.15)] relative">
         <Player
+          ref={playerRef}
           component={PhysicsVideo}
           inputProps={inputProps}
           durationInFrames={sceneConfig.totalFrames}
@@ -109,12 +161,12 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
           {downloading === "video" ? (
             <>
               <SpinnerSmall />
-              渲染中...
+              录制中 {recordingProgress}%
             </>
           ) : (
             <>
               <DownloadIcon />
-              下载视频 MP4
+              下载视频 WebM
             </>
           )}
         </button>
