@@ -1,0 +1,398 @@
+<!DOCTYPE html> 
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汽车票收集问题 - 逻辑推导动画</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --primary-color: #4a90e2;
+            --secondary-color: #f39c12;
+            --text-color: #2c3e50;
+            --ticket-1: #6ab04c;
+            --ticket-2: #4834d4;
+            --ticket-5: #f0932b;
+            --ticket-10: #eb4d4b;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+
+        #canvas {
+            width: 100vw;
+            height: 56.25vw; /* 16:9 Aspect Ratio */
+            max-width: 1920px;
+            max-height: 1080px;
+            position: relative;
+            background: radial-gradient(circle at center, #ffffff 0%, #e9ecef 100%);
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+
+        /* 顶部标题 */
+        .header {
+            position: absolute;
+            top: 5%;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        /* 车票样式 */
+        .ticket {
+            width: 100px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            position: absolute;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .ticket-1 { background-color: var(--ticket-1); }
+        .ticket-2 { background-color: var(--ticket-2); }
+        .ticket-5 { background-color: var(--ticket-5); }
+        .ticket-10 { background-color: var(--ticket-10); }
+
+        .ticket span { font-size: 1.2rem; }
+        .ticket small { font-size: 0.6rem; opacity: 0.8; }
+
+        /* 同学容器 */
+        .students-container {
+            position: absolute;
+            bottom: 15%;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 5%;
+        }
+
+        .student {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 15%;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            background: #ddd;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            border: 4px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .student-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .student-sum {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            background: white;
+            padding: 2px 15px;
+            border-radius: 20px;
+            min-width: 60px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* 计算面板 */
+        .calc-panel {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            font-size: 1.8rem;
+            text-align: center;
+            opacity: 0;
+            z-index: 5;
+        }
+
+        /* 字幕 */
+        .subtitles {
+            position: absolute;
+            bottom: 5%;
+            width: 100%;
+            text-align: center;
+            padding: 0 50px;
+            pointer-events: none;
+        }
+
+        .sub-zh {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+            margin-bottom: 5px;
+        }
+
+        .sub-en {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+        }
+
+        /* 逻辑推导步骤 */
+        .logic-step {
+            position: absolute;
+            top: 35%;
+            left: 10%;
+            right: 10%;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .highlight {
+            color: var(--ticket-10);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas">
+    <div class="header">
+        <h1>收集汽车票的数学逻辑</h1>
+    </div>
+
+    <!-- 车票展示区域 -->
+    <div id="ticket-pool"></div>
+
+    <!-- 计算面板 -->
+    <div class="calc-panel" id="calc-panel">
+        总价值 = (3×1) + (3×2) + (2×5) + (4×10) = <span class="highlight">59元</span>
+    </div>
+
+    <!-- 逻辑解析 -->
+    <div class="logic-step" id="logic-step">
+        <h2 style="margin-bottom:15px; color: var(--primary-color);">解题思路：</h2>
+        <p style="font-size: 1.4rem; line-height: 1.6;">
+            1. 总共有5位同学，每人钱数互不相同。<br>
+            2. 要使"最大值"尽量小，5人的钱数应尽可能<b>接近</b>。<br>
+            3. 平均值为 59 ÷ 5 = 11.8元。尝试围绕11.8构造连续整数...
+        </p>
+    </div>
+
+    <!-- 同学展示区域 -->
+    <div class="students-container">
+        <div class="student" id="s1">
+            <div class="avatar">👦</div>
+            <div class="student-name">同学 A</div>
+            <div class="student-sum" id="sum1">0</div>
+        </div>
+        <div class="student" id="s2">
+            <div class="avatar">👧</div>
+            <div class="student-name">同学 B</div>
+            <div class="student-sum" id="sum2">0</div>
+        </div>
+        <div class="student" id="s3">
+            <div class="avatar">🧒</div>
+            <div class="student-name">同学 C</div>
+            <div class="student-sum" id="sum3">0</div>
+        </div>
+        <div class="student" id="s4">
+            <div class="avatar">👧</div>
+            <div class="student-name">同学 D</div>
+            <div class="student-sum" id="sum4">0</div>
+        </div>
+        <div class="student" id="s5">
+            <div class="avatar">👦</div>
+            <div class="student-name">同学 E</div>
+            <div class="student-sum" id="sum5">0</div>
+        </div>
+    </div>
+
+    <!-- 字幕区域 -->
+    <div class="subtitles">
+        <div class="sub-zh" id="sub-zh">准备开始解决这个问题...</div>
+        <div class="sub-en" id="sub-en">Preparing to solve this problem...</div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+    const ticketPool = document.getElementById('ticket-pool');
+    const tickets = [
+        { val: 1, color: 'ticket-1', count: 3 },
+        { val: 2, color: 'ticket-2', count: 3 },
+        { val: 5, color: 'ticket-5', count: 2 },
+        { val: 10, color: 'ticket-10', count: 4 }
+    ];
+
+    const ticketElements = [];
+
+    // 初始化车票
+    function initTickets() {
+        let idx = 0;
+        tickets.forEach(t => {
+            for(let i=0; i<t.count; i++) {
+                const el = document.createElement('div');
+                el.className = `ticket ${t.color}`;
+                el.innerHTML = `<small>TICKET</small><span>￥${t.val}</span>`;
+                // 初始散落在顶部
+                el.style.left = `${10 + (idx * 7)}%`;
+                el.style.top = `-100px`;
+                ticketPool.appendChild(el);
+                ticketElements.push({ el, val: t.val, used: false });
+                idx++;
+            }
+        });
+    }
+
+    function updateSub(zh, en) {
+        document.getElementById('sub-zh').innerText = zh;
+        document.getElementById('sub-en').innerText = en;
+    }
+
+    function animate() {
+        const tl = gsap.timeline();
+
+        // 1. 进场
+        tl.to(".ticket", {
+            top: "20%",
+            stagger: 0.05,
+            ease: "back.out(1.7)",
+            duration: 0.8
+        });
+        tl.add(() => updateSub("我们有3张1元，3张2元，2张5元和4张10元车票。", "We have three $1, three $2, two $5, and four $10 tickets."), "+=0.5");
+
+        // 2. 计算总和
+        tl.to("#calc-panel", { opacity: 1, y: 20, duration: 0.5 }, "+=1");
+        tl.add(() => updateSub("首先计算所有车票的总面值：59元。", "First, calculate the total value of all tickets: $59."), "+=0.2");
+
+        // 3. 逻辑说明
+        tl.to("#ticket-pool", { opacity: 0.2, duration: 0.5 }, "+=1.5");
+        tl.to("#logic-step", { opacity: 1, y: 0, duration: 0.8 });
+        tl.add(() => updateSub("要让最大值最小，五个人的钱数应当尽可能接近。", "To minimize the maximum value, the five amounts should be as close as possible."), "+=0.2");
+        tl.add(() => updateSub("59 ÷ 5 = 11.8元，所以钱数应分布在12附近。", "59 ÷ 5 = 11.8, so the amounts should be distributed around 12."), "+=2");
+
+        // 4. 尝试分配过程 (推导结论)
+        tl.to("#logic-step", { opacity: 0, duration: 0.5 }, "+=2");
+        tl.to("#ticket-pool", { opacity: 1, duration: 0.5 });
+        tl.add(() => updateSub("经过尝试，若最大值为14元，无法用现有票面组合出所有不重复的钱数。", "After testing, if the maximum is $14, we cannot form all distinct values with these denominations."), "+=0.5");
+        tl.add(() => updateSub("让我们看看最大值为15元时的最优分配方案。", "Let's see the optimal distribution when the maximum is $15."), "+=2.5");
+
+        // 5. 正式分配车票 {15, 14, 13, 12, 5}
+        const distribution = [
+            { student: 1, tickets: [10, 5], sum: 15 },
+            { student: 2, tickets: [10, 2, 2], sum: 14 },
+            { student: 3, tickets: [10, 2, 1], sum: 13 },
+            { student: 4, tickets: [10, 1, 1], sum: 12 },
+            { student: 5, tickets: [5], sum: 5 }
+        ];
+
+        let delay = 0;
+        distribution.forEach((dist, dIdx) => {
+            let currentSum = 0;
+            dist.tickets.forEach((val, tIdx) => {
+                const ticketObj = ticketElements.find(t => t.val === val && !t.used);
+                ticketObj.used = true;
+                const targetStudent = document.getElementById(`s${dist.student}`);
+                const rect = targetStudent.getBoundingClientRect();
+                
+                tl.to(ticketObj.el, {
+                    left: rect.left + 10,
+                    top: rect.top - 50 - (tIdx * 15),
+                    rotation: Math.random() * 20 - 10,
+                    duration: 0.8,
+                    ease: "power2.out"
+                }, 10 + delay);
+
+                currentSum += val;
+                const sumEl = document.getElementById(`sum${dist.student}`);
+                tl.add(() => {
+                    sumEl.innerText = currentSum;
+                    gsap.from(sumEl, { scale: 1.5, duration: 0.3 });
+                }, 10.5 + delay);
+                
+                delay += 0.2;
+            });
+            delay += 0.5;
+        });
+
+        tl.add(() => updateSub("分配方案：15元, 14元, 13元, 12元, 5元。", "Distribution: $15, $14, $13, $12, $5."), 10);
+        
+        // 6. 结论
+        tl.add(() => {
+            updateSub("因此，钱数最多的同学最少收集了 15 元车票。", "Therefore, the student with the most money collected at least $15 worth of tickets.");
+            document.getElementById('sum1').style.backgroundColor = '#eb4d4b';
+            document.getElementById('sum1').style.color = 'white';
+        }, "+=1");
+
+        tl.to(".student", {
+            scale: (i) => i === 0 ? 1.2 : 0.9,
+            opacity: (i) => i === 0 ? 1 : 0.6,
+            duration: 1,
+            ease: "elastic.out(1, 0.5)"
+        });
+
+        // 最终定格
+        tl.add(() => {
+            const finalBox = document.createElement('div');
+            finalBox.style.position = 'absolute';
+            finalBox.style.top = '50%';
+            finalBox.style.left = '50%';
+            finalBox.style.transform = 'translate(-50%, -50%)';
+            finalBox.style.padding = '40px 80px';
+            finalBox.style.background = 'var(--ticket-10)';
+            finalBox.style.color = 'white';
+            finalBox.style.fontSize = '4rem';
+            finalBox.style.borderRadius = '20px';
+            finalBox.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
+            finalBox.style.zIndex = '100';
+            finalBox.innerText = '答案：15 元';
+            document.getElementById('canvas').appendChild(finalBox);
+            gsap.from(finalBox, { scale: 0, rotation: 720, duration: 1, ease: "back.out(1.7)" });
+        }, "+=1");
+    }
+
+    window.onload = () => {
+        initTickets();
+        animate();
+    };
+</script>
+
+</body>
+</html>

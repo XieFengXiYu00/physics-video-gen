@@ -20,7 +20,7 @@ export function InputCard({ state, onSubmit, onCancel }: InputCardProps) {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [referenceAnswer, setReferenceAnswer] = useState("");
-  const [showRefAnswer, setShowRefAnswer] = useState(false);
+  const [showRefAnswer, setShowRefAnswer] = useState(true);
 
   const handleFile = useCallback(async (file: File) => {
     try {
