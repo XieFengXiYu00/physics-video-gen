@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback, useRef } from "react";
 import { Player, PlayerRef } from "@remotion/player";
 import { PhysicsVideo } from "@/remotion/PhysicsVideo";
 import { SceneConfig } from "@/types/scene";
+import html2canvas from "html2canvas";
 
 interface VideoPanelProps {
   sceneConfig: SceneConfig;
@@ -15,10 +16,12 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
   const [downloading, setDownloading] = useState<"video" | "pptx" | null>(null);
   const [recordingProgress, setRecordingProgress] = useState(0);
   const playerRef = useRef<PlayerRef>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadVideo = useCallback(async () => {
     const player = playerRef.current;
-    if (!player) {
+    const container = playerContainerRef.current;
+    if (!player || !container) {
       alert("播放器未就绪");
       return;
     }
@@ -27,15 +30,25 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
     setRecordingProgress(0);
 
     try {
-      const container = player.getContainerNode();
-      if (!container) throw new Error("找不到播放器容器");
+      const totalFrames = sceneConfig.totalFrames;
+      const fps = sceneConfig.fps;
+      const frameInterval = 1000 / fps;
+      
+      const offscreenCanvas = document.createElement("canvas");
+      offscreenCanvas.width = sceneConfig.width;
+      offscreenCanvas.height = sceneConfig.height;
+      const ctx = offscreenCanvas.getContext("2d");
+      if (!ctx) throw new Error("无法创建画布上下文");
 
-      const canvas = container.querySelector("canvas");
-      if (!canvas) throw new Error("找不到画布元素");
-
-      const stream = canvas.captureStream(sceneConfig.fps);
+      const stream = offscreenCanvas.captureStream(fps);
+      
+      let mimeType = "video/webm;codecs=vp9";
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "video/webm";
+      }
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp9",
+        mimeType,
         videoBitsPerSecond: 5000000,
       });
 
@@ -52,28 +65,38 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
         mediaRecorder.onerror = (e) => reject(e);
       });
 
+      player.pause();
       player.seekTo(0);
-      player.pause();
-      
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 200));
 
-      mediaRecorder.start();
-      player.play();
+      mediaRecorder.start(100);
 
-      const totalMs = (sceneConfig.totalFrames / sceneConfig.fps) * 1000;
-      const startTime = Date.now();
+      const playerElement = container.querySelector(".remotion-player") as HTMLElement;
+      const targetElement = playerElement || container;
 
-      const progressInterval = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(100, Math.round((elapsed / totalMs) * 100));
+      for (let frame = 0; frame < totalFrames; frame++) {
+        player.seekTo(frame);
+        await new Promise((r) => setTimeout(r, 50));
+
+        const frameCanvas = await html2canvas(targetElement, {
+          backgroundColor: "#0f172a",
+          scale: 1,
+          logging: false,
+          useCORS: true,
+          width: sceneConfig.width,
+          height: sceneConfig.height,
+        });
+
+        ctx.drawImage(frameCanvas, 0, 0, sceneConfig.width, sceneConfig.height);
+        
+        await new Promise((r) => setTimeout(r, frameInterval - 50));
+
+        const progress = Math.round(((frame + 1) / totalFrames) * 100);
         setRecordingProgress(progress);
-      }, 200);
+      }
 
-      await new Promise((r) => setTimeout(r, totalMs + 500));
-
-      clearInterval(progressInterval);
+      await new Promise((r) => setTimeout(r, 500));
       mediaRecorder.stop();
-      player.pause();
 
       const blob = await recordingPromise;
       const url = URL.createObjectURL(blob);
@@ -127,7 +150,10 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
         </div>
       </div>
 
-      <div className="rounded-xl overflow-hidden border border-fuchsia-500/20 shadow-[0_0_36px_rgba(217,70,239,0.15)] relative">
+      <div 
+        ref={playerContainerRef}
+        className="rounded-xl overflow-hidden border border-fuchsia-500/20 shadow-[0_0_36px_rgba(217,70,239,0.15)] relative"
+      >
         <Player
           ref={playerRef}
           component={PhysicsVideo}
