@@ -7,7 +7,11 @@ import { PipelineState } from "@/lib/usePipeline";
 
 interface InputCardProps {
   state: PipelineState;
-  onSubmit: (input: { problemText: string; imageBase64?: string }) => void;
+  onSubmit: (input: {
+    problemText: string;
+    imageBase64?: string;
+    referenceAnswer?: string;
+  }) => void;
   onCancel: () => void;
 }
 
@@ -15,6 +19,8 @@ export function InputCard({ state, onSubmit, onCancel }: InputCardProps) {
   const [text, setText] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [referenceAnswer, setReferenceAnswer] = useState("");
+  const [showRefAnswer, setShowRefAnswer] = useState(true);
 
   const handleFile = useCallback(async (file: File) => {
     try {
@@ -58,7 +64,11 @@ export function InputCard({ state, onSubmit, onCancel }: InputCardProps) {
 
   const submit = () => {
     if (!canSubmit) return;
-    onSubmit({ problemText: text, imageBase64: imageBase64 ?? undefined });
+    onSubmit({
+      problemText: text,
+      imageBase64: imageBase64 ?? undefined,
+      referenceAnswer: referenceAnswer.trim() || undefined,
+    });
   };
 
   return (
@@ -117,6 +127,31 @@ export function InputCard({ state, onSubmit, onCancel }: InputCardProps) {
               JPG · PNG · GIF · WebP — auto compress
             </div>
           </div>
+        )}
+      </div>
+
+      {/* 可选：参考答案输入 */}
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => setShowRefAnswer(!showRefAnswer)}
+          className="flex items-center gap-2 text-xs text-slate-500 hover:text-cyan-400 transition-colors self-start font-mono-tech uppercase tracking-wider"
+        >
+          <span
+            className={`inline-block transition-transform ${showRefAnswer ? "rotate-90" : ""}`}
+          >
+            ▸
+          </span>
+          参考答案（可选）
+        </button>
+        {showRefAnswer && (
+          <textarea
+            value={referenceAnswer}
+            onChange={(e) => setReferenceAnswer(e.target.value)}
+            placeholder="输入正确答案帮助 AI 更好地推理和讲解"
+            rows={2}
+            className="scan-on-focus bg-slate-950/60 border border-emerald-500/15 rounded-xl p-3 text-slate-100 placeholder-slate-600 resize-none focus:outline-none transition-all text-sm leading-relaxed font-mono-tech"
+          />
         )}
       </div>
 

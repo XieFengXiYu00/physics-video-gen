@@ -82,11 +82,11 @@ export const VIDEO = {
 } as const;
 
 export const SCENE_DURATIONS = {
-  PROBLEM: 90,
-  DIAGRAM: 150,
-  ANSWER: 120,
-  SOLUTION_PER_STEP_MIN: 30,
-  SOLUTION_TARGET_TOTAL: 210,
+  PROBLEM: 150,
+  DIAGRAM: 240,
+  ANSWER: 180,
+  SOLUTION_PER_STEP_MIN: 90,
+  SOLUTION_TARGET_TOTAL: 480,
 } as const;
 
 // ─── Diagram canvas ──────────────────────────────────────────────────────────

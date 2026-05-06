@@ -39,6 +39,28 @@ export const solutionStepSchema = z.object({
   result: z.string().optional(),
 });
 
+export const visualStoryboardGroupSchema = z.object({
+  label: z.string(),
+  items: z.array(z.string()),
+  sum: z.string().optional(),
+});
+
+export const visualStoryboardStepSchema = z.object({
+  title: z.string(),
+  narration: z.string(),
+  visual_action: z.enum([
+    "show_items",
+    "show_equation",
+    "distribute_items",
+    "compare_cases",
+    "highlight_answer",
+    "explain",
+  ]),
+  equation: z.string().optional(),
+  highlights: z.array(z.string()).optional(),
+  groups: z.array(visualStoryboardGroupSchema).optional(),
+});
+
 export const teacherPlanSchema = z.object({
   problem_summary: z.string(),
   subject: z.enum(SUBJECTS),
@@ -49,6 +71,7 @@ export const teacherPlanSchema = z.object({
   objects: z.array(physicsObjectSchema),
   forces: z.array(physicsForceSchema),
   solution_steps: z.array(solutionStepSchema),
+  visual_storyboard: z.array(visualStoryboardStepSchema).optional(),
   answer: z.string(),
 });
 

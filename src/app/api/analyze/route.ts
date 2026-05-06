@@ -3,9 +3,10 @@ import { runTeacherAgent } from "@/agents/teacher";
 
 export async function POST(req: NextRequest) {
   try {
-    const { problemText, imageBase64 } = (await req.json()) as {
+    const { problemText, imageBase64, referenceAnswer } = (await req.json()) as {
       problemText?: string;
       imageBase64?: string;
+      referenceAnswer?: string;
     };
 
     if (!problemText?.trim() && !imageBase64) {
@@ -19,7 +20,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const plan = await runTeacherAgent(problemText ?? "", imageBase64);
+    const plan = await runTeacherAgent(
+      problemText ?? "",
+      imageBase64,
+      referenceAnswer
+    );
     return NextResponse.json({ plan });
   } catch (err) {
     console.error("[/api/analyze]", err);

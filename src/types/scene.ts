@@ -21,7 +21,21 @@ export interface ObjectConfig {
   angle?: number; // rotation
 }
 
-export type SceneType = "problem" | "diagram" | "solution" | "answer";
+export type StoryboardAction =
+  | "show_items"
+  | "show_equation"
+  | "distribute_items"
+  | "compare_cases"
+  | "highlight_answer"
+  | "explain";
+
+export interface StoryboardGroupConfig {
+  label: string;
+  items: string[];
+  sum?: string;
+}
+
+export type SceneType = "problem" | "diagram" | "solution" | "storyboard" | "answer";
 
 export interface ProblemSceneConfig {
   type: "problem";
@@ -55,6 +69,18 @@ export interface SolutionSceneConfig {
   }>;
 }
 
+export interface StoryboardSceneConfig {
+  type: "storyboard";
+  startFrame: number;
+  durationFrames: number;
+  title: string;
+  narration: string;
+  visualAction: StoryboardAction;
+  equation?: string;
+  highlights?: string[];
+  groups?: StoryboardGroupConfig[];
+}
+
 export interface AnswerSceneConfig {
   type: "answer";
   startFrame: number;
@@ -66,6 +92,7 @@ export type AnyScene =
   | ProblemSceneConfig
   | DiagramSceneConfig
   | SolutionSceneConfig
+  | StoryboardSceneConfig
   | AnswerSceneConfig;
 
 export interface SceneConfig {

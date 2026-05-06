@@ -4,6 +4,7 @@ import { FreeBodyDiagram } from "./components/FreeBodyDiagram";
 import { SolutionStep } from "./components/SolutionStep";
 import { ProblemScene } from "./components/ProblemScene";
 import { AnswerScene } from "./components/AnswerScene";
+import { StoryboardScene } from "./components/StoryboardScene";
 
 interface PhysicsVideoProps {
   config: SceneConfig;
@@ -50,6 +51,17 @@ function SceneRenderer({ scene }: { scene: AnyScene }) {
       );
     case "solution":
       return <SolutionStep steps={scene.steps} />;
+    case "storyboard":
+      return (
+        <StoryboardScene
+          title={scene.title}
+          narration={scene.narration}
+          visualAction={scene.visualAction}
+          equation={scene.equation}
+          highlights={scene.highlights}
+          groups={scene.groups}
+        />
+      );
     case "answer":
       return <AnswerScene answerText={scene.answerText} />;
   }

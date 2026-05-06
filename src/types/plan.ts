@@ -31,6 +31,29 @@ export interface SolutionStep {
   result?: string;
 }
 
+export type VisualAction =
+  | "show_items"
+  | "show_equation"
+  | "distribute_items"
+  | "compare_cases"
+  | "highlight_answer"
+  | "explain";
+
+export interface VisualStoryboardGroup {
+  label: string;
+  items: string[];
+  sum?: string;
+}
+
+export interface VisualStoryboardStep {
+  title: string;
+  narration: string;
+  visual_action: VisualAction;
+  equation?: string;
+  highlights?: string[];
+  groups?: VisualStoryboardGroup[];
+}
+
 export interface TeacherPlan {
   problem_summary: string;
   subject: Subject;
@@ -41,5 +64,6 @@ export interface TeacherPlan {
   objects: PhysicsObject[];
   forces: PhysicsForce[];
   solution_steps: SolutionStep[];
+  visual_storyboard?: VisualStoryboardStep[];
   answer: string;
 }

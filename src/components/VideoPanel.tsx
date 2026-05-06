@@ -1,18 +1,144 @@
 "use client";
 
-import { useMemo } from "react";
-import { Player } from "@remotion/player";
+import { useMemo, useState, useCallback, useRef } from "react";
+import { Player, PlayerRef } from "@remotion/player";
 import { PhysicsVideo } from "@/remotion/PhysicsVideo";
 import { SceneConfig } from "@/types/scene";
+import html2canvas from "html2canvas";
 
 interface VideoPanelProps {
   sceneConfig: SceneConfig;
 }
 
 export function VideoPanel({ sceneConfig }: VideoPanelProps) {
-  // Memoize so the Player doesn't re-mount on parent re-renders.
   const inputProps = useMemo(() => ({ config: sceneConfig }), [sceneConfig]);
   const seconds = Math.round(sceneConfig.totalFrames / sceneConfig.fps);
+  const [downloading, setDownloading] = useState<"video" | "pptx" | null>(null);
+  const [recordingProgress, setRecordingProgress] = useState(0);
+  const playerRef = useRef<PlayerRef>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadVideo = useCallback(async () => {
+    const player = playerRef.current;
+    const container = playerContainerRef.current;
+    if (!player || !container) {
+      alert("播放器未就绪");
+      return;
+    }
+
+    setDownloading("video");
+    setRecordingProgress(0);
+
+    try {
+      const totalFrames = sceneConfig.totalFrames;
+      const fps = sceneConfig.fps;
+      const frameInterval = 1000 / fps;
+      
+      const offscreenCanvas = document.createElement("canvas");
+      offscreenCanvas.width = sceneConfig.width;
+      offscreenCanvas.height = sceneConfig.height;
+      const ctx = offscreenCanvas.getContext("2d");
+      if (!ctx) throw new Error("无法创建画布上下文");
+
+      const stream = offscreenCanvas.captureStream(fps);
+      
+      let mimeType = "video/webm;codecs=vp9";
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "video/webm";
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        videoBitsPerSecond: 5000000,
+      });
+
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      const recordingPromise = new Promise<Blob>((resolve, reject) => {
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: "video/webm" });
+          resolve(blob);
+        };
+        mediaRecorder.onerror = (e) => reject(e);
+      });
+
+      player.pause();
+      player.seekTo(0);
+      await new Promise((r) => setTimeout(r, 200));
+
+      mediaRecorder.start(100);
+
+      const playerElement = container.querySelector(".remotion-player") as HTMLElement;
+      const targetElement = playerElement || container;
+
+      for (let frame = 0; frame < totalFrames; frame++) {
+        player.seekTo(frame);
+        await new Promise((r) => setTimeout(r, 50));
+
+        const frameCanvas = await html2canvas(targetElement, {
+          backgroundColor: "#0f172a",
+          scale: 1,
+          logging: false,
+          useCORS: true,
+          width: sceneConfig.width,
+          height: sceneConfig.height,
+        });
+
+        ctx.drawImage(frameCanvas, 0, 0, sceneConfig.width, sceneConfig.height);
+        
+        await new Promise((r) => setTimeout(r, frameInterval - 50));
+
+        const progress = Math.round(((frame + 1) / totalFrames) * 100);
+        setRecordingProgress(progress);
+      }
+
+      await new Promise((r) => setTimeout(r, 500));
+      mediaRecorder.stop();
+
+      const blob = await recordingPromise;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `physics-video-${Date.now()}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[video recording]", err);
+      alert(err instanceof Error ? err.message : "录制失败，请尝试使用 Chrome 浏览器");
+    } finally {
+      setDownloading(null);
+      setRecordingProgress(0);
+    }
+  }, [sceneConfig]);
+
+  const handleDownloadPptx = useCallback(async () => {
+    setDownloading("pptx");
+    try {
+      const res = await fetch("/api/export-pptx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sceneConfig }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "导出失败");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `physics-slides-${Date.now()}.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "下载失败");
+    } finally {
+      setDownloading(null);
+    }
+  }, [sceneConfig]);
 
   return (
     <div className="glass-panel rounded-2xl p-5">
@@ -24,8 +150,12 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
         </div>
       </div>
 
-      <div className="rounded-xl overflow-hidden border border-fuchsia-500/20 shadow-[0_0_36px_rgba(217,70,239,0.15)] relative">
+      <div 
+        ref={playerContainerRef}
+        className="rounded-xl overflow-hidden border border-fuchsia-500/20 shadow-[0_0_36px_rgba(217,70,239,0.15)] relative"
+      >
         <Player
+          ref={playerRef}
           component={PhysicsVideo}
           inputProps={inputProps}
           durationInFrames={sceneConfig.totalFrames}
@@ -45,6 +175,46 @@ export function VideoPanel({ sceneConfig }: VideoPanelProps) {
         <Stat label="Resolution" value={`${sceneConfig.width}×${sceneConfig.height}`} />
         <Stat label="Framerate" value={`${sceneConfig.fps} fps`} />
       </div>
+
+      {/* Download buttons */}
+      <div className="flex gap-3 mt-4">
+        <button
+          type="button"
+          onClick={handleDownloadVideo}
+          disabled={downloading !== null}
+          className="flex-1 py-2.5 rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 disabled:opacity-50 disabled:cursor-not-allowed text-fuchsia-200 font-medium font-mono-tech tracking-wider uppercase text-xs transition-all flex items-center justify-center gap-2"
+        >
+          {downloading === "video" ? (
+            <>
+              <SpinnerSmall />
+              录制中 {recordingProgress}%
+            </>
+          ) : (
+            <>
+              <DownloadIcon />
+              下载视频 WebM
+            </>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={handleDownloadPptx}
+          disabled={downloading !== null}
+          className="flex-1 py-2.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed text-cyan-200 font-medium font-mono-tech tracking-wider uppercase text-xs transition-all flex items-center justify-center gap-2"
+        >
+          {downloading === "pptx" ? (
+            <>
+              <SpinnerSmall />
+              导出中...
+            </>
+          ) : (
+            <>
+              <SlidesIcon />
+              下载 PPTX
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -59,5 +229,27 @@ function Stat({ label, value }: { label: string; value: string }) {
         {value}
       </div>
     </div>
+  );
+}
+
+function SpinnerSmall() {
+  return (
+    <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+  );
+}
+
+function SlidesIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
   );
 }

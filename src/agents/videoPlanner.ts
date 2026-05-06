@@ -1,9 +1,10 @@
-import { TeacherPlan, PhysicsForce, PhysicsObject } from "@/types/plan";
+import { TeacherPlan, PhysicsForce, PhysicsObject, VisualStoryboardStep } from "@/types/plan";
 import {
   SceneConfig,
   AnyScene,
   ArrowConfig,
   ObjectConfig,
+  StoryboardSceneConfig,
 } from "@/types/scene";
 import {
   DIAGRAM,
@@ -38,6 +39,24 @@ function objectToConfig(obj: PhysicsObject): ObjectConfig {
     y: obj.position?.y ?? 0.5,
     width: isWedge ? DIAGRAM.DEFAULT_WEDGE_W : DIAGRAM.DEFAULT_BLOCK_W,
     height: isWedge ? DIAGRAM.DEFAULT_WEDGE_H : DIAGRAM.DEFAULT_BLOCK_H,
+  };
+}
+
+function storyboardToScene(
+  step: VisualStoryboardStep,
+  cursor: number,
+  durationFrames: number
+): StoryboardSceneConfig {
+  return {
+    type: "storyboard",
+    startFrame: cursor,
+    durationFrames,
+    title: step.title,
+    narration: step.narration,
+    visualAction: step.visual_action,
+    equation: step.equation,
+    highlights: step.highlights,
+    groups: step.groups,
   };
 }
 
@@ -88,8 +107,18 @@ export function runVideoPlanner(plan: TeacherPlan): SceneConfig {
     cursor += SCENE_DURATIONS.DIAGRAM;
   }
 
-  // ── 3. Solution steps ──
-  if (plan.solution_steps.length > 0) {
+  // ── 3. Visual storyboard (preferred when the teacher agent provides it) ──
+  if (plan.visual_storyboard?.length) {
+    const framesPerStoryboard = Math.max(
+      SCENE_DURATIONS.SOLUTION_PER_STEP_MIN * 2,
+      Math.floor(SCENE_DURATIONS.SOLUTION_TARGET_TOTAL / plan.visual_storyboard.length)
+    );
+    for (const step of plan.visual_storyboard) {
+      scenes.push(storyboardToScene(step, cursor, framesPerStoryboard));
+      cursor += framesPerStoryboard;
+    }
+  } else if (plan.solution_steps.length > 0) {
+    // ── 3b. Generic solution steps fallback ──
     const stepCount = plan.solution_steps.length;
     const framesPerStep = Math.max(
       SCENE_DURATIONS.SOLUTION_PER_STEP_MIN,

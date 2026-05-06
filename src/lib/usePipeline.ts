@@ -17,7 +17,11 @@ export interface PipelineResult {
   sceneConfig: SceneConfig | null;
   error: string | null;
   /** Run the two-agent pipeline. Cancels any in-flight request first. */
-  run: (input: { problemText: string; imageBase64?: string }) => Promise<void>;
+  run: (input: {
+    problemText: string;
+    imageBase64?: string;
+    referenceAnswer?: string;
+  }) => Promise<void>;
   /** Abort an in-flight request and reset to idle. */
   cancel: () => void;
 }
@@ -46,9 +50,11 @@ export function usePipeline(): PipelineResult {
     async ({
       problemText,
       imageBase64,
+      referenceAnswer,
     }: {
       problemText: string;
       imageBase64?: string;
+      referenceAnswer?: string;
     }) => {
       // Abort previous, start a fresh controller.
       abortRef.current?.abort();
@@ -65,7 +71,7 @@ export function usePipeline(): PipelineResult {
         const r1 = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ problemText, imageBase64 }),
+          body: JSON.stringify({ problemText, imageBase64, referenceAnswer }),
           signal: controller.signal,
         });
         const d1 = await r1.json();
