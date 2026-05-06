@@ -23,7 +23,7 @@ GEMINI_API_KEY=AIzaSy.....
 
 去 [Google AI Studio](https://aistudio.google.com/apikey) 领免费 Key（Gemini Flash 有慷慨的免费额度）。
 
-### 2. 启动
+### 2. 启动（本地 npm）
 
 ```bash
 npm install
@@ -32,11 +32,69 @@ npm run dev
 
 访问 http://localhost:3000
 
+### 3. 启动（Docker）
+
+**需要：** Docker 与 Docker Compose
+
+```bash
+# 方式 1：本机 3000 端口可用
+docker compose up -d
+
+# 方式 2：本机 3000 端口被占用，改用 3001
+# （docker-compose.yml 已配置 "3001:3000"）
+docker compose up -d
+# 访问 http://localhost:3001
+```
+
+查看日志：
+```bash
+docker compose logs -f
+```
+
+停止：
+```bash
+docker compose down
+```
+
+### 4. API 测试
+
+**测试 Agent 2（纯函数，无需 Gemini API Key）：**
+
+```bash
+curl -X POST http://localhost:3000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan": {
+      "problem_summary": "质量为2kg的物体从10m高处自由落下，求落地速度",
+      "subject": "physics",
+      "problem_type": "kinematics",
+      "difficulty": "high_school",
+      "given": {"h": "10 m", "g": "9.8 m/s²"},
+      "unknowns": ["v"],
+      "objects": [{"id": "ball", "label": "物体", "shape": "block", "position": {"x": 0.5, "y": 0.3}}],
+      "forces": [{"on": "ball", "type": "gravity", "magnitude": "19.6N", "angle_deg": 270}],
+      "solution_steps": [{"step": 1, "description": "v²=2gh", "equation": "v²=2×9.8×10=196", "result": "v=14m/s"}],
+      "answer": "落地速度为14 m/s"
+    }
+  }'
+```
+
+**测试 Agent 1（需要 GEMINI_API_KEY）：**
+
+```bash
+curl -X POST http://localhost:3000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"problemText": "质量为10kg的物体放在水平面上，受到5N的水平推力，求加速度"}'
+```
+
 ## 部署到 Vercel
 
-完全兼容，零配置：
+完全兼容，零配置。本地 Docker 开发和 Vercel 云部署**互不影响**：
 
 1. 把代码 push 到 GitHub
+   ```bash
+   git push origin main
+   ```
 2. 去 [vercel.com/new](https://vercel.com/new) 选这个仓库
 3. **Environment Variables** 填：
    - `GEMINI_API_KEY` = 你的 Key
@@ -44,6 +102,8 @@ npm run dev
 4. Deploy
 
 > ⚠ `.env.local` 不会被推到 Git（已在 `.gitignore`）。Vercel 上的环境变量在 Project Settings → Environment Variables 配置。
+
+本地继续用 Docker 开发，Vercel 是生产环境，两者独立运行。
 
 ## 项目结构
 

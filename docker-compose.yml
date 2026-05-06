@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env.local
+    volumes:
+      # 挂载源码，支持热更新（开发模式）
+      - ./src:/app/src
+      - ./public:/app/public
+    restart: unless-stopped
