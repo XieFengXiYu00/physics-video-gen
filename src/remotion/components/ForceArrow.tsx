@@ -1,6 +1,6 @@
 import { useCurrentFrame, useVideoConfig, spring } from "remotion";
-import { ArrowConfig } from "@/types/scene";
-import { DIAGRAM, SPRINGS } from "@/lib/constants";
+import { ArrowConfig } from "../../types/scene";
+import { DIAGRAM, SPRINGS } from "../../lib/constants";
 
 interface ForceArrowProps extends ArrowConfig {
   index: number;

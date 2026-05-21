@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "remotion:preview": "remotion preview src/remotion/Root.tsx",
-    "remotion:render": "remotion render src/remotion/Root.tsx PhysicsVideo --output out/physics.mp4"
+    "remotion:render": "remotion render src/remotion/Root.tsx PhysicsVideo --output out/physics.mp4",
+    "remotion:render:intro": "remotion render src/remotion/Root.tsx SplitBrandIntro --output out/split-brand-intro.mp4"
   },
   "dependencies": {
+    "@fontsource/knewave": "^5.2.7",
     "@remotion/cli": "^4.0.454",
     "@remotion/player": "^4.0.454",
     "html2canvas": "^1.4.1",

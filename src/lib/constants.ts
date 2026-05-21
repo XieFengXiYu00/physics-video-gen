@@ -43,7 +43,7 @@ export const FORCE_COLOR_LABELS_ZH: Record<ForceType, string> = {
 
 // ─── Subjects, problem types, difficulty ────────────────────────────────────
 
-export const SUBJECTS = ["physics", "math", "chemistry"] as const;
+export const SUBJECTS = ["physics", "math", "chemistry", "other"] as const;
 export type Subject = (typeof SUBJECTS)[number];
 
 export const PROBLEM_TYPES = [
@@ -82,11 +82,11 @@ export const VIDEO = {
 } as const;
 
 export const SCENE_DURATIONS = {
-  PROBLEM: 150,
-  DIAGRAM: 240,
-  ANSWER: 180,
-  SOLUTION_PER_STEP_MIN: 90,
-  SOLUTION_TARGET_TOTAL: 480,
+  PROBLEM: 180,          // was 150 — more time for title + given reveal
+  DIAGRAM: 300,          // was 240 — more time for staggered arrows
+  ANSWER: 210,           // was 180 — celebration particles need time
+  SOLUTION_PER_STEP_MIN: 120,   // was 90 — equation reveal + result needs time
+  SOLUTION_TARGET_TOTAL: 600,   // was 480 — give steps more breathing room
 } as const;
 
 // ─── Diagram canvas ──────────────────────────────────────────────────────────

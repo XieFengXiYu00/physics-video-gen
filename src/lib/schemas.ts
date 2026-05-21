@@ -45,6 +45,18 @@ export const visualStoryboardGroupSchema = z.object({
   sum: z.string().optional(),
 });
 
+export const visualStoryboardEntityPositionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  kind: z
+    .enum(["ticket", "student", "equation", "constraint", "answer", "object"])
+    .optional(),
+  emphasis: z.boolean().optional(),
+  value: z.string().optional(),
+});
+
 export const visualStoryboardStepSchema = z.object({
   title: z.string(),
   narration: z.string(),
@@ -55,10 +67,43 @@ export const visualStoryboardStepSchema = z.object({
     "compare_cases",
     "highlight_answer",
     "explain",
+    "reveal_text",
+    "animate_logo",
+    "count_stats",
   ]),
   equation: z.string().optional(),
   highlights: z.array(z.string()).optional(),
   groups: z.array(visualStoryboardGroupSchema).optional(),
+  layout_type: z
+    .enum([
+      // 教学类
+      "equation_focus",
+      "constraint_reasoning",
+      "final_answer_reveal",
+      "ticket_pool",
+      "student_distribution",
+      // 创意展示类
+      "hero_title",
+      "feature_highlight",
+      "split_screen",
+      "text_reveal",
+      "stats_counter",
+      "timeline_step",
+      "code_showcase",
+      "logo_reveal",
+      // 通用
+      "default",
+    ])
+    .optional(),
+  visual_priority: z.enum(["objects", "equation", "constraints", "answer", "text", "graphic"]).optional(),
+  entity_positions: z.array(visualStoryboardEntityPositionSchema).optional(),
+  panel_style: z.enum(["glass", "flat", "spotlight", "board", "gradient", "dark"]).optional(),
+  emphasis_target: z.string().optional(),
+  animation_cue: z
+    .enum(["stagger_in", "count_up", "spotlight", "distribute", "reveal_answer", "slide_in", "zoom_in", "typewriter"])
+    .optional(),
+  step_duration: z.number().int().min(60).max(240).optional(),
+  caption_style: z.enum(["bilingual", "teacher", "minimal", "marketing"]).optional(),
 });
 
 export const teacherPlanSchema = z.object({

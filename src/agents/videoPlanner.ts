@@ -57,6 +57,13 @@ function storyboardToScene(
     equation: step.equation,
     highlights: step.highlights,
     groups: step.groups,
+    layoutType: step.layout_type,
+    visualPriority: step.visual_priority,
+    entityPositions: step.entity_positions,
+    panelStyle: step.panel_style,
+    emphasisTarget: step.emphasis_target,
+    animationCue: step.animation_cue,
+    captionStyle: step.caption_style,
   };
 }
 
@@ -109,11 +116,11 @@ export function runVideoPlanner(plan: TeacherPlan): SceneConfig {
 
   // ── 3. Visual storyboard (preferred when the teacher agent provides it) ──
   if (plan.visual_storyboard?.length) {
-    const framesPerStoryboard = Math.max(
-      SCENE_DURATIONS.SOLUTION_PER_STEP_MIN * 2,
-      Math.floor(SCENE_DURATIONS.SOLUTION_TARGET_TOTAL / plan.visual_storyboard.length)
-    );
     for (const step of plan.visual_storyboard) {
+      const framesPerStoryboard = Math.max(
+        SCENE_DURATIONS.SOLUTION_PER_STEP_MIN,
+        step.step_duration ?? Math.floor(SCENE_DURATIONS.SOLUTION_TARGET_TOTAL / plan.visual_storyboard.length)
+      );
       scenes.push(storyboardToScene(step, cursor, framesPerStoryboard));
       cursor += framesPerStoryboard;
     }

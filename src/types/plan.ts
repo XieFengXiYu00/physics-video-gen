@@ -39,6 +39,32 @@ export type VisualAction =
   | "highlight_answer"
   | "explain";
 
+export type StoryboardLayoutType =
+  | "ticket_pool"
+  | "student_distribution"
+  | "constraint_reasoning"
+  | "final_answer_reveal"
+  | "equation_focus"
+  | "default";
+
+export type StoryboardVisualPriority = "objects" | "equation" | "constraints" | "answer";
+
+export type StoryboardPanelStyle = "glass" | "flat" | "spotlight" | "board";
+
+export type StoryboardCaptionStyle = "bilingual" | "teacher" | "minimal";
+
+export type StoryboardAnimationCue = "stagger_in" | "count_up" | "spotlight" | "distribute" | "reveal_answer";
+
+export interface StoryboardEntityPosition {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  kind?: "ticket" | "student" | "equation" | "constraint" | "answer" | "object";
+  emphasis?: boolean;
+  value?: string;
+}
+
 export interface VisualStoryboardGroup {
   label: string;
   items: string[];
@@ -52,6 +78,14 @@ export interface VisualStoryboardStep {
   equation?: string;
   highlights?: string[];
   groups?: VisualStoryboardGroup[];
+  layout_type?: StoryboardLayoutType;
+  visual_priority?: StoryboardVisualPriority;
+  entity_positions?: StoryboardEntityPosition[];
+  panel_style?: StoryboardPanelStyle;
+  emphasis_target?: string;
+  animation_cue?: StoryboardAnimationCue;
+  step_duration?: number;
+  caption_style?: StoryboardCaptionStyle;
 }
 
 export interface TeacherPlan {

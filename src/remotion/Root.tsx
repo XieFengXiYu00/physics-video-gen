@@ -1,71 +1,134 @@
 import React from "react";
-import { Composition } from "remotion";
-import { PhysicsVideo } from "./PhysicsVideo";
-import { SceneConfig } from "@/types/scene";
-import { FORCE_COLORS, SCENE_DURATIONS, VIDEO } from "@/lib/constants";
-
-const { PROBLEM, DIAGRAM: DIAG_DUR, ANSWER } = SCENE_DURATIONS;
-const SOLUTION_DUR = 120;
-
-const DEMO_CONFIG: SceneConfig = {
-  fps: VIDEO.FPS,
-  totalFrames: PROBLEM + DIAG_DUR + SOLUTION_DUR + ANSWER,
-  width: VIDEO.WIDTH,
-  height: VIDEO.HEIGHT,
-  scenes: [
-    {
-      type: "problem",
-      startFrame: 0,
-      durationFrames: PROBLEM,
-      title: "木楔受力分析",
-      subtitle: "高中物理 · 受力分析",
-      problemText: "M=10kg，μ=0.02，m=1kg，θ=30°，s=1.4m，v=1.4m/s",
-      given: { M: "10 kg", m: "1.0 kg", μ: "0.02", θ: "30°", s: "1.4 m", v: "1.4 m/s" },
-    },
-    {
-      type: "diagram",
-      startFrame: PROBLEM,
-      durationFrames: DIAG_DUR,
-      title: "受力分析",
-      objects: [
-        { id: "wedge", label: "M", shape: "wedge", x: 0.5, y: 0.6, width: 0.3, height: 0.25 },
-        { id: "block", label: "m", shape: "block", x: 0.6, y: 0.38, width: 0.13, height: 0.11 },
-      ],
-      arrows: [
-        { fromX: 0.6, fromY: 0.38, angle_deg: 270, length: 75, color: FORCE_COLORS.gravity, label: "mg", magnitude: "10N" },
-        { fromX: 0.6, fromY: 0.38, angle_deg: 120, length: 65, color: FORCE_COLORS.normal, label: "N", magnitude: "N" },
-        { fromX: 0.6, fromY: 0.38, angle_deg: 210, length: 55, color: FORCE_COLORS.friction, label: "f", magnitude: "f" },
-      ],
-    },
-    {
-      type: "solution",
-      startFrame: PROBLEM + DIAG_DUR,
-      durationFrames: SOLUTION_DUR,
-      steps: [
-        { stepNumber: 1, description: "由运动学求加速度", equation: "v²=2as", result: "a = 0.7 m/s²" },
-        { stepNumber: 2, description: "对物块受力分析", equation: "N − mg cosθ = ma", result: "N ≈ 9.4 N" },
-        { stepNumber: 3, description: "对木楔水平方向合力为零，求摩擦力 f₀" },
-      ],
-    },
-    {
-      type: "answer",
-      startFrame: PROBLEM + DIAG_DUR + SOLUTION_DUR,
-      durationFrames: ANSWER,
-      answerText: "地面对木楔的摩擦力大小约为 0.35 N，方向水平向右",
-    },
-  ],
-};
+import { Composition, registerRoot } from "remotion";
+import {
+  SplitBrandIntro,
+  splitBrandIntroDefaultProps,
+} from "./SplitBrandIntro";
+import { JensenHuangCeoIntro, jensenDefaultProps } from "./JensenHuangCeoIntro";
+import { GlitchHtmlCanvasSample, glitchDefaultProps } from "./GlitchHtmlCanvasSample";
+import { TypewriterText, typewriterDefaultProps } from "./TypewriterText";
+import { CountdownTimer, countdownDefaultProps } from "./CountdownTimer";
+import { NeonTitle, neonTitleDefaultProps } from "./NeonTitle";
+import { MinimalQuote, minimalQuoteDefaultProps } from "./MinimalQuote";
+import { ParticleWaveTitle, particleWaveDefaultProps } from "./ParticleWaveTitle";
+import { LogoBrandReveal, logoBrandRevealDefaultProps } from "./LogoBrandReveal";
+import {
+  FreeformSceneScript,
+  freeformSceneScriptDefaultProps,
+  getFreeformTotalFrames,
+} from "./FreeformSceneScript";
+import {
+  CompositeVideo,
+  compositeVideoDefaultProps,
+  getCompositeTotalFrames,
+} from "./CompositeVideo";
 
 export function RemotionRoot() {
   return (
-    <Composition
-      id="PhysicsVideo"
-      component={PhysicsVideo as unknown as React.ComponentType<Record<string, unknown>>}
-      durationInFrames={DEMO_CONFIG.totalFrames}
-      fps={DEMO_CONFIG.fps}
-      width={DEMO_CONFIG.width}
-      height={DEMO_CONFIG.height}
-      defaultProps={{ config: DEMO_CONFIG }}
-    />
+    <>
+      <Composition
+        id="SplitBrandIntro"
+        component={SplitBrandIntro}
+        durationInFrames={150}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={splitBrandIntroDefaultProps}
+      />
+      <Composition
+        id="JensenHuangCeoIntro"
+        component={JensenHuangCeoIntro}
+        durationInFrames={180}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={jensenDefaultProps}
+      />
+      <Composition
+        id="GlitchHtmlCanvasSample"
+        component={GlitchHtmlCanvasSample}
+        durationInFrames={150}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={glitchDefaultProps}
+      />
+      <Composition
+        id="TypewriterText"
+        component={TypewriterText}
+        durationInFrames={180}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={typewriterDefaultProps}
+      />
+      <Composition
+        id="CountdownTimer"
+        component={CountdownTimer}
+        durationInFrames={150}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={countdownDefaultProps}
+      />
+      <Composition
+        id="NeonTitle"
+        component={NeonTitle}
+        durationInFrames={150}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={neonTitleDefaultProps}
+      />
+      <Composition
+        id="MinimalQuote"
+        component={MinimalQuote}
+        durationInFrames={180}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={minimalQuoteDefaultProps}
+      />
+      <Composition
+        id="ParticleWaveTitle"
+        component={ParticleWaveTitle}
+        durationInFrames={180}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={particleWaveDefaultProps}
+      />
+      <Composition
+        id="LogoBrandReveal"
+        component={LogoBrandReveal}
+        durationInFrames={210}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={logoBrandRevealDefaultProps}
+      />
+      <Composition
+        id="FreeformSceneScript"
+        component={FreeformSceneScript}
+        durationInFrames={getFreeformTotalFrames(
+          freeformSceneScriptDefaultProps.scenes
+        )}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={freeformSceneScriptDefaultProps}
+      />
+      <Composition
+        id="CompositeVideo"
+        component={CompositeVideo}
+        durationInFrames={getCompositeTotalFrames(compositeVideoDefaultProps)}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={compositeVideoDefaultProps}
+      />
+    </>
   );
 }
+
+registerRoot(RemotionRoot);

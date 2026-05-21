@@ -1,0 +1,16 @@
+<svg width="320" height="180" viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="180" fill="#0a0a0a"/>
+  <!-- Radial glow -->
+  <circle cx="160" cy="90" r="70" fill="url(#countGlow)"/>
+  <defs>
+    <radialGradient id="countGlow">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Progress ring -->
+  <circle cx="160" cy="90" r="55" fill="none" stroke="#f9731622" stroke-width="4"/>
+  <circle cx="160" cy="90" r="55" fill="none" stroke="#f97316" stroke-width="4" stroke-linecap="round" stroke-dasharray="345" stroke-dashoffset="115" transform="rotate(-90 160 90)"/>
+  <!-- Number -->
+  <text x="160" y="103" font-family="system-ui, sans-serif" font-size="56" font-weight="800" fill="#f0f0f0" text-anchor="middle">3</text>
+</svg>

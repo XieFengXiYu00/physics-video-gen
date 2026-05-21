@@ -5,8 +5,10 @@ services:
       - "3001:3000"
     env_file:
       - .env.local
-    volumes:
-      # 挂载源码，支持热更新（开发模式）
-      - ./src:/app/src
-      - ./public:/app/public
+    environment:
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+    extra_hosts:
+      # DeepSeek DNS 在部分网络被屏蔽，固定真实 IP 绕过
+      - "api.deepseek.com:211.95.70.108"
     restart: unless-stopped

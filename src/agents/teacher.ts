@@ -26,76 +26,75 @@ const colorGuidance = FORCE_TYPES.map(
   (t) => `${FORCE_COLOR_LABELS_ZH[t]}: "${FORCE_COLORS[t]}"`
 ).join("，");
 
-const SYSTEM_PROMPT = `你是一位经验丰富、寓教于乐的中国中学理科老师。你的任务是将题目转化为精美的动态教学动画脚本。
+const SYSTEM_PROMPT = `你是一位专业的 Remotion 视频脚本创作者，擅长把任意内容转化为节奏流畅、视觉精美的动态视频分镜脚本。
+
+你既可以制作「教学解题」类视频，也可以制作「品牌介绍」「产品展示」「技术开场白」「动效模板」等创意内容——就像 Remotion 官网的精美展示视频。
+
+【创作原则】
+- 始终从「这一帧观众看到什么、感受什么」出发设计分镜
+- 每一屏有清晰的视觉焦点，信息密度适中，不要一帧塞太多内容
+- narration 根据风格调整：教学口吻、产品文案、技术解说、旁白叙述均可
+- 配色、布局、节奏参考 Remotion 官网美学：简洁现代，重视留白，动效克制有力
+- highlights 中英混用，用于字幕强调和视觉标签
+- 前后帧逻辑递进：「吸引注意 → 展开内容 → 强调结论」
+
+【视觉布局要求】
+- 所有元素在画面中合理摆放（画布默认 1920×1080），使用 0-1 相对坐标
+- 背景、文字、图形层次分明，避免穿模和字幕遮挡
 
 ══════════════════════════════════════════════════════════════════════════════
-核心目标：生成【精美的动态动画视频脚本】
+教学解题模式：参考答案处理规则
 ══════════════════════════════════════════════════════════════════════════════
 
-你要输出的不只是答案，而是一段完整的、正在播放的教学视频分镜。
-- 包含完整的推理过程，从头到尾把知识点讲清楚
-- 页面极为精美、好看、有设计感，同时能准确传达知识
-- 附带旁白式文字解说（narration），口语化、亲切、像老师在讲课
-- 使用和谐好看的浅色配色方案，丰富的视觉元素
-- 中英文双语字幕风格（narration 用中文，highlights 可中英混用）
-
-【重要】视觉布局要求：
-- 所有元素必须在 2K 分辨率画面中正确摆放
-- 避免穿模、字幕遮挡、图形位置错误等影响视觉传达的问题
-- 合理排布物体位置（避免居中重叠），使用 0-1 相对坐标
-
-══════════════════════════════════════════════════════════════════════════════
-参考答案处理规则（极其重要）
-══════════════════════════════════════════════════════════════════════════════
-
-【务必重视参考答案】当用户提供了参考答案时：
-1. 以参考答案为最终结论进行逆向推理，确保你的解题过程能推导出该答案
-2. 结合参考答案和题目一起深入思考，理解出题人意图
-3. 如果参考答案与你的初步理解有冲突，优先信任参考答案并调整推理
-4. 在 visual_storyboard 中清晰展示如何一步步得到参考答案
-5. answer 字段必须与参考答案一致
+当用户提供了参考答案时：
+1. 以参考答案为最终结论进行逆向推理，确保解题过程能推导出该答案
+2. solution_steps 只保留最终正确路径，不要输出自相矛盾步骤
+3. visual_storyboard 围绕最终正确方案组织镜头
+4. answer 字段与参考答案一致
 
 ══════════════════════════════════════════════════════════════════════════════
 输出格式要求
 ══════════════════════════════════════════════════════════════════════════════
 
-仔细阅读题目（文字或图片），调用 emit_plan 函数输出结构化的解题分析。
-每道题恰好调用一次 emit_plan。
+调用 emit_plan 函数，每次请求恰好调用一次。
 
 字段说明：
-- subject: ${SUBJECTS.join(" / ")}
-- problem_type: ${PROBLEM_TYPES.join(" / ")}
+- subject: ${SUBJECTS.join(" / ")}（非教学类选 other）
+- problem_type: ${PROBLEM_TYPES.join(" / ")}（创意视频可选 other）
 - difficulty: ${DIFFICULTIES.join(" / ")}
 - objects[].shape: ${SHAPES.join(" / ")}
 - forces[].type: ${FORCE_TYPES.join(" / ")}
-- visual_storyboard: 适合 Remotion 动画的视频分镜（4-7 步）
+- objects 和 forces：教学物理题必填；创意视频类可为空数组
+- visual_storyboard: 分镜脚本 3-8 步，每步是可直接渲染的一屏画面
 
-坐标系约定：
+坐标系约定（教学题专用）：
 - objects[].position 用 0-1 相对坐标，(0,0)=左上，(1,1)=右下
 - forces[].angle_deg 从正 x 轴逆时针：0°=右，90°=上，180°=左，270°=下（重力）
 
-颜色（forces[].color 推荐使用，与画面配色保持一致）：
+颜色参考（forces[].color）：
 ${colorGuidance}
-
-斜面题：斜面用 shape:"wedge"，滑块用 shape:"block"。
-mass 字段统一用字符串表示，例如 "10" 或 "10kg"。
 
 ══════════════════════════════════════════════════════════════════════════════
 visual_storyboard 分镜脚本要求
 ══════════════════════════════════════════════════════════════════════════════
 
-- 输出 4-7 步，适合逐屏播放和字幕旁白
-- 每步 narration 用口语化中文，像老师在讲课，解释"为什么这么做"
-- visual_action 只能使用：show_items / show_equation / distribute_items / compare_cases / highlight_answer / explain
-- 数学、组合、分配类题目优先表达"展示对象 → 列式 → 尝试或排除 → 构造方案 → 高亮答案"
-- groups 用于表达分组/分配，例如 [{"label":"同学A","items":["10元","5元"],"sum":"15元"}]
-- highlights 用于强调关键数字、结论或关键词（支持中英混用）
+输出 3-8 步，每步是「可直接渲染的一屏」。layout_type 选择渲染模板：
+
+  教学类      equation_focus / constraint_reasoning / final_answer_reveal / ticket_pool / student_distribution
+  创意展示类  hero_title / feature_highlight / split_screen / text_reveal / stats_counter / timeline_step / code_showcase / logo_reveal
+  通用兜底    default
+
+- visual_action: show_items / show_equation / distribute_items / compare_cases / highlight_answer / explain / reveal_text / animate_logo / count_stats
+- visual_priority: objects / equation / constraints / answer / text / graphic
+- panel_style: glass / flat / spotlight / board / gradient / dark
+- animation_cue: stagger_in / count_up / spotlight / distribute / reveal_answer / slide_in / zoom_in / typewriter
+- caption_style: bilingual / teacher / minimal / marketing
+- highlights 用于强调关键词；groups 用于分组/分配动画
 
 【分镜质量标准】
-- 每一帧都要有清晰的视觉焦点
-- 信息密度适中，不要一帧塞太多内容
-- 前后帧之间要有逻辑递进关系
-- 最后一帧必须是 highlight_answer，清晰呈现最终答案`;
+- 每帧视觉焦点清晰，节奏稳定，前后递进
+- 教学类：solution_steps 3-6 步，只保留正确解法主线；最后一帧 highlight_answer
+- 创意类：第一帧「抓眼球」的视觉冲击；末帧品牌/结论强印象（logo_reveal 或 highlight_answer）`;
 
 /** Same constraints as emit_plan，但要求纯 JSON（用于工具调用失败时的回退）。 */
 const SYSTEM_PROMPT_JSON = `${SYSTEM_PROMPT}
@@ -112,11 +111,11 @@ const PLAN_TOOL: GeminiTool = {
   functionDeclarations: [
     {
       name: "emit_plan",
-      description: "输出题目的结构化解题分析。每道题恰好调用一次。",
+      description: "输出视频脚本的结构化分析。每次请求恰好调用一次。",
       parameters: {
         type: "OBJECT",
         properties: {
-          problem_summary: { type: "STRING", description: "题目一句话描述" },
+          problem_summary: { type: "STRING", description: "视频内容一句话概述" },
           subject: { type: "STRING", enum: [...SUBJECTS] },
           problem_type: { type: "STRING", enum: [...PROBLEM_TYPES] },
           difficulty: { type: "STRING", enum: [...DIFFICULTIES] },
@@ -215,6 +214,9 @@ const PLAN_TOOL: GeminiTool = {
                     "compare_cases",
                     "highlight_answer",
                     "explain",
+                    "reveal_text",
+                    "animate_logo",
+                    "count_stats",
                   ],
                 },
                 equation: {
@@ -225,6 +227,72 @@ const PLAN_TOOL: GeminiTool = {
                   type: "ARRAY",
                   description: "画面上需要突出显示的关键词或数字",
                   items: { type: "STRING" },
+                },
+                layout_type: {
+                  type: "STRING",
+                  enum: [
+                    // 教学类
+                    "equation_focus",
+                    "constraint_reasoning",
+                    "final_answer_reveal",
+                    "ticket_pool",
+                    "student_distribution",
+                    // 创意展示类
+                    "hero_title",
+                    "feature_highlight",
+                    "split_screen",
+                    "text_reveal",
+                    "stats_counter",
+                    "timeline_step",
+                    "code_showcase",
+                    "logo_reveal",
+                    // 通用
+                    "default",
+                  ],
+                },
+                visual_priority: {
+                  type: "STRING",
+                  enum: ["objects", "equation", "constraints", "answer", "text", "graphic"],
+                },
+                entity_positions: {
+                  type: "ARRAY",
+                  description: "关键视觉实体在画面中的位置与强调信息",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      id: { type: "STRING" },
+                      label: { type: "STRING" },
+                      x: { type: "NUMBER", minimum: 0, maximum: 1 },
+                      y: { type: "NUMBER", minimum: 0, maximum: 1 },
+                      kind: {
+                        type: "STRING",
+                        enum: ["ticket", "student", "equation", "constraint", "answer", "object"],
+                      },
+                      emphasis: { type: "BOOLEAN" },
+                      value: { type: "STRING" },
+                    },
+                    required: ["id", "label", "x", "y"],
+                  },
+                },
+                panel_style: {
+                  type: "STRING",
+                  enum: ["glass", "flat", "spotlight", "board", "gradient", "dark"],
+                },
+                emphasis_target: {
+                  type: "STRING",
+                  description: "本屏最重要的对象、变量或结论",
+                },
+                animation_cue: {
+                  type: "STRING",
+                  enum: ["stagger_in", "count_up", "spotlight", "distribute", "reveal_answer", "slide_in", "zoom_in", "typewriter"],
+                },
+                step_duration: {
+                  type: "INTEGER",
+                  description: "建议时长，单位 frame，范围 60-240",
+                },
+                caption_style: {
+                  type: "STRING",
+                  enum: ["bilingual", "teacher", "minimal", "marketing"],
                 },
                 groups: {
                   type: "ARRAY",
@@ -241,7 +309,20 @@ const PLAN_TOOL: GeminiTool = {
                   },
                 },
               },
-              required: ["title", "narration", "visual_action"],
+              required: [
+                "title",
+                "narration",
+                "visual_action",
+                "layout_type",
+                "visual_priority",
+                "entity_positions",
+                "panel_style",
+                "emphasis_target",
+                "animation_cue",
+                "step_duration",
+                "caption_style",
+                "highlights",
+              ],
             },
           },
           answer: { type: "STRING" },
@@ -255,6 +336,7 @@ const PLAN_TOOL: GeminiTool = {
           "objects",
           "forces",
           "solution_steps",
+          "visual_storyboard",
           "answer",
         ],
       },
@@ -446,8 +528,8 @@ export async function runTeacherAgent(
     const textHint = extractModelText(response).slice(0, 200);
     throw new Error(
       `Gemini 未能产出有效解题计划（finishReason=${fr2 ?? fr1 ?? "UNKNOWN"}）。` +
-        (fallbackErr instanceof Error ? ` ${fallbackErr.message}` : "") +
-        (textHint ? ` 片段：${textHint}` : "")
+      (fallbackErr instanceof Error ? ` ${fallbackErr.message}` : "") +
+      (textHint ? ` 片段：${textHint}` : "")
     );
   }
 }

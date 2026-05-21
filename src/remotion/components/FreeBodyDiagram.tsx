@@ -1,6 +1,6 @@
 import { useCurrentFrame, interpolate } from "remotion";
-import { ArrowConfig, ObjectConfig } from "@/types/scene";
-import { DIAGRAM } from "@/lib/constants";
+import { ArrowConfig, ObjectConfig } from "../../types/scene";
+import { DIAGRAM } from "../../lib/constants";
 import { ForceArrow } from "./ForceArrow";
 import { SceneShell } from "./SceneShell";
 

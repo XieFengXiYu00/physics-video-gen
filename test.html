@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极值问题：汽车票分配逻辑</title>
+    <style>
+        :root {
+            --bg: #fdfbf7;
+            --primary: #4f46e5;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --text-dark: #1e293b;
+            --ticket-1: #94a3b8;
+            --ticket-2: #fbbf24;
+            --ticket-5: #f87171;
+            --ticket-10: #60a5fa;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+        }
+
+        /* 2K 容器 */
+        #viewport {
+            width: 2560px;
+            height: 1440px;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+            transform-origin: center;
+        }
+
+        /* 装饰元素 */
+        .grid-bg {
+            position: absolute;
+            width: 100%; height: 100%;
+            background-image: linear-gradient(#e5e7eb 2px, transparent 2px), linear-gradient(90deg, #e5e7eb 2px, transparent 2px);
+            background-size: 100px 100px;
+            opacity: 0.3;
+        }
+
+        /* 标题与看板 */
+        .ui-header {
+            position: absolute;
+            top: 80px; width: 100%;
+            text-align: center;
+        }
+
+        .ui-header h1 { font-size: 84px; color: var(--text-dark); margin-bottom: 20px; }
+
+        /* 资源库：票据 */
+        .resource-pool {
+            position: absolute;
+            top: 280px; left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 60px;
+            padding: 50px 80px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+        }
+
+        .ticket-item {
+            text-align: center;
+        }
+
+        .ticket-card {
+            width: 200px; height: 110px;
+            border-radius: 15px;
+            color: white; font-size: 42px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .v-1 { background: var(--ticket-1); }
+        .v-2 { background: var(--ticket-2); }
+        .v-5 { background: var(--ticket-5); }
+        .v-10 { background: var(--ticket-10); }
+
+        /* 学生卡片区 */
+        .students-row {
+            position: absolute;
+            bottom: 320px; width: 100%;
+            display: flex; justify-content: center; gap: 80px;
+        }
+
+        .student-card {
+            width: 380px; height: 480px;
+            background: white; border-radius: 35px;
+            padding: 40px; display: flex; flex-direction: column;
+            align-items: center; justify-content: space-between;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 6px solid transparent;
+            opacity: 0.8;
+        }
+
+        .student-card.active {
+            opacity: 1; transform: translateY(-30px);
+            border-color: var(--primary);
+            box-shadow: 0 30px 60px rgba(79, 70, 229, 0.15);
+        }
+
+        .avatar {
+            width: 140px; height: 140px;
+            background: #f1f5f9; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 50px;
+        }
+
+        .amount { font-size: 80px; font-weight: 800; color: var(--text-dark); }
+        .amount::after { content: " 元"; font-size: 32px; font-weight: 400; }
+
+        /* 字幕系统 */
+        .caption-box {
+            position: absolute;
+            bottom: 100px; width: 100%;
+            text-align: center;
+            padding: 0 200px;
+        }
+
+        .zh-text { font-size: 54px; font-weight: 700; color: var(--text-dark); margin-bottom: 10px; }
+        .en-text { font-size: 30px; color: #64748b; letter-spacing: 1px; }
+
+        /* 计算浮窗 */
+        .stats-panel {
+            position: absolute;
+            right: 120px; top: 400px;
+            width: 550px; background: white;
+            padding: 50px; border-radius: 35px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+            opacity: 0; transform: scale(0.9);
+            transition: 0.8s;
+        }
+
+        .stat-row {
+            font-size: 42px; margin-bottom: 25px;
+            display: flex; justify-content: space-between;
+        }
+
+        .highlight { color: var(--secondary); font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div id="viewport">
+        <div class="grid-bg"></div>
+
+        <div class="ui-header">
+            <h1>汽车票极值分配方案</h1>
+        </div>
+
+        <div class="resource-pool">
+            <div class="ticket-item"><div class="ticket-card v-1">￥1</div><p>3 张</p></div>
+            <div class="ticket-item"><div class="ticket-card v-2">￥2</div><p>3 张</p></div>
+            <div class="ticket-item"><div class="ticket-card v-5">￥5</div><p>2 张</p></div>
+            <div class="ticket-item"><div class="ticket-card v-10">￥10</div><p>4 张</p></div>
+        </div>
+
+        <div class="stats-panel" id="panel">
+            <div class="stat-row"><span>总面额:</span> <span id="total-val">59元</span></div>
+            <div class="stat-row"><span>平均值:</span> <span id="avg-val">11.8元</span></div>
+            <div class="stat-row" style="border-top: 2px dashed #eee; padding-top:20px;">
+                <span style="color:var(--accent)">目标值:</span> <span style="color:var(--accent)">Min(Max)</span>
+            </div>
+        </div>
+
+        <div class="students-row">
+            <div class="student-card" id="c1"><div class="avatar">👤</div><p>同学 A</p><div class="amount" id="a1">0</div></div>
+            <div class="student-card" id="c2"><div class="avatar">👤</div><p>同学 B</p><div class="amount" id="a2">0</div></div>
+            <div class="student-card" id="c3"><div class="avatar">👤</div><p>同学 C</p><div class="amount" id="a3">0</div></div>
+            <div class="student-card" id="c4"><div class="avatar">👤</div><p>同学 D</p><div class="amount" id="a4">0</div></div>
+            <div class="student-card" id="c5"><div class="avatar">👤</div><p>同学 E</p><div class="amount" id="a5">0</div></div>
+        </div>
+
+        <div class="caption-box">
+            <div class="zh-text" id="zh">正在初始化演示程序...</div>
+            <div class="en-text" id="en">Initializing the logic demonstration...</div>
+        </div>
+    </div>
+
+    <script>
+        // 自动缩放
+        const resize = () => {
+            const v = document.getElementById('viewport');
+            const scale = Math.min(window.innerWidth / 2560, window.innerHeight / 1440);
+            v.style.transform = `scale(${scale})`;
+        };
+        window.onresize = resize;
+        resize();
+
+        const script = [
+            { zh: "首先计算总金额：3×1 + 3×2 + 2×5 + 4×10 = 59 元", en: "First, calculate total: 3×1 + 3×2 + 2×5 + 4×10 = 59 Yuan." },
+            { zh: "5人分59元，平均每人 11.8 元。为了让最大值最小，每人金额应接近 11.8", en: "Avg = 11.8. To minimize the max, amounts must be close to each other." },
+            { zh: "尝试寻找5个互不相同的整数，使其总和为 59", en: "Let's find 5 distinct integers that sum up to 59." },
+            { zh: "如果最大是 14，尝试分配：14, 13, 12, 11, 9。但需要验证票据组合...", en: "If Max=14, we try 14, 13, 12, 11, 9. But we must check ticket combinations." },
+            { zh: "由于 10 元票只有 4 张，且小额票有限，14 元无法满足所有人的组合要求", en: "With only four 10-yuan tickets, 14 is not feasible for all combinations." },
+            { zh: "提高最高值至 15。尝试分配：8, 11, 12, 13, 15", en: "Increase Max to 15. Let's try: 8, 11, 12, 13, 15." },
+            { zh: "验证组合：15(10+5), 13(10+2+1), 12(10+2), 11(10+1), 8(5+2+1)", en: "Verification: 15(10+5), 13(10+2+1), 12(10+2), 11(10+1), 8(5+2+1)." },
+            { zh: "所有票据刚好用完！因此收集最多的同学最少收集了 15 元", en: "All tickets used! The minimum possible maximum is 15 Yuan." }
+        ];
+
+        async function play() {
+            const zhEl = document.getElementById('zh');
+            const enEl = document.getElementById('en');
+            const panel = document.getElementById('panel');
+
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+            const updateSub = (i) => {
+                zhEl.innerText = script[i].zh;
+                enEl.innerText = script[i].en;
+            };
+
+            const setAmounts = (arr) => {
+                arr.forEach((v, idx) => {
+                    const el = document.getElementById(`a${idx+1}`);
+                    const card = document.getElementById(`c${idx+1}`);
+                    el.innerText = v;
+                    card.classList.add('active');
+                });
+            };
+
+            // 流程开始
+            await sleep(1000);
+            updateSub(0);
+            panel.style.opacity = 1;
+            panel.style.transform = 'scale(1)';
+            
+            await sleep(4000);
+            updateSub(1);
+            
+            await sleep(4000);
+            updateSub(2);
+            
+            await sleep(4000);
+            updateSub(3);
+            setAmounts([9, 11, 12, 13, 14]);
+            
+            await sleep(4000);
+            updateSub(4);
+            document.querySelectorAll('.student-card').forEach(c => c.style.borderColor = '#f87171');
+
+            await sleep(5000);
+            updateSub(5);
+            setAmounts([8, 11, 12, 13, 15]);
+            document.querySelectorAll('.student-card').forEach(c => c.style.borderColor = 'var(--primary)');
+
+            await sleep(5000);
+            updateSub(6);
+            document.getElementById('c5').style.borderColor = 'var(--success)';
+            document.getElementById('c5').style.background = '#ecfdf5';
+
+            await sleep(5000);
+            updateSub(7);
+            document.getElementById('c5').style.transform = 'translateY(-60px) scale(1.1)';
+        }
+
+        play();
+    </script>
+</body>
+</html>

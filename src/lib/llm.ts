@@ -168,3 +168,69 @@ export function extractModelText(res: GeminiResponse): string {
     .filter(Boolean)
     .join("");
 }
+
+// ─── DeepSeek (OpenAI-compatible) ────────────────────────────────────────────
+
+const DEEPSEEK_BASE_URL = "https://api.deepseek.com/chat/completions";
+const DEEPSEEK_DEFAULT_MODEL = "deepseek-chat";
+
+export interface DeepSeekCallOptions {
+  systemPrompt: string;
+  userPrompt: string;
+  temperature?: number;
+  maxTokens?: number;
+  jsonMode?: boolean;
+  signal?: AbortSignal;
+}
+
+/**
+ * Call DeepSeek via its OpenAI-compatible chat completions endpoint.
+ * Returns the raw text content of the first choice.
+ *
+ * NOTE: DeepSeek's domain may be DNS-blocked on some corporate networks.
+ * We intentionally bypass the corporate proxy here (proxy returns 403 for
+ * api.deepseek.com). Direct connection works once /etc/hosts resolves the
+ * real IP.
+ */
+export async function callDeepSeek(opts: DeepSeekCallOptions): Promise<string> {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error("缺少 DEEPSEEK_API_KEY 环境变量");
+
+  // Always use native fetch (no proxy) — corporate proxies block DeepSeek.
+  const fetcher = globalThis.fetch as typeof fetch;
+
+  const body: Record<string, unknown> = {
+    model: process.env.DEEPSEEK_MODEL ?? DEEPSEEK_DEFAULT_MODEL,
+    messages: [
+      { role: "system", content: opts.systemPrompt },
+      { role: "user", content: opts.userPrompt },
+    ],
+    temperature: opts.temperature ?? 0.7,
+    max_tokens: opts.maxTokens ?? 1024,
+  };
+
+  if (opts.jsonMode !== false) {
+    body.response_format = { type: "json_object" };
+  }
+
+  const res = await fetcher(DEEPSEEK_BASE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+    signal: opts.signal,
+  });
+
+  const json = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+    error?: { message?: string };
+  };
+
+  if (!res.ok || json.error) {
+    throw new Error(`DeepSeek 调用失败：${json.error?.message ?? res.status}`);
+  }
+
+  return json.choices?.[0]?.message?.content ?? "";
+}

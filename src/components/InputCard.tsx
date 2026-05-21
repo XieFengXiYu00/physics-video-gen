@@ -56,6 +56,9 @@ export function InputCard({ state, onSubmit, onCancel }: InputCardProps) {
 
   const busy = state === "analyzing" || state === "generating";
   const canSubmit = (!!text.trim() || !!imageBase64) && !busy;
+  const disabledReason = !text.trim() && !imageBase64
+    ? "请先输入题目文字或上传截图"
+    : null;
 
   const clearImage = () => {
     setImagePreview(null);
@@ -93,11 +96,10 @@ export function InputCard({ state, onSubmit, onCancel }: InputCardProps) {
 
       <div
         {...getRootProps()}
-        className={`relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all overflow-hidden ${
-          isDragActive
+        className={`relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all overflow-hidden ${isDragActive
             ? "border-cyan-400 bg-cyan-500/10 shadow-[0_0_24px_rgba(34,211,238,0.3)]"
             : "border-cyan-500/15 hover:border-cyan-500/40 hover:bg-cyan-500/5"
-        }`}
+          }`}
       >
         <input {...getInputProps()} />
         {imagePreview ? (
@@ -168,18 +170,26 @@ export function InputCard({ state, onSubmit, onCancel }: InputCardProps) {
           <span className="text-cyan-500">click to abort</span>
         </button>
       ) : (
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          className="relative group w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 disabled:from-slate-700 disabled:via-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed font-bold text-white tracking-wider uppercase text-sm shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all overflow-hidden"
-        >
-          <span className="relative z-10 flex items-center justify-center gap-2">
-            <span>⚡</span> 生成解题视频
-          </span>
-          {/* shimmer */}
-          <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!canSubmit}
+            className="relative group w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 disabled:from-slate-700 disabled:via-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed font-bold text-white tracking-wider uppercase text-sm shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all overflow-hidden"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span>⚡</span> 生成解题视频
+            </span>
+            {/* shimmer */}
+            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          </button>
+
+          {!canSubmit && disabledReason && (
+            <div className="text-xs text-amber-300/80 font-mono-tech tracking-wide">
+              {disabledReason}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

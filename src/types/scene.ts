@@ -29,10 +29,36 @@ export type StoryboardAction =
   | "highlight_answer"
   | "explain";
 
+export type StoryboardLayoutType =
+  | "ticket_pool"
+  | "student_distribution"
+  | "constraint_reasoning"
+  | "final_answer_reveal"
+  | "equation_focus"
+  | "default";
+
+export type StoryboardVisualPriority = "objects" | "equation" | "constraints" | "answer";
+
+export type StoryboardPanelStyle = "glass" | "flat" | "spotlight" | "board";
+
+export type StoryboardCaptionStyle = "bilingual" | "teacher" | "minimal";
+
+export type StoryboardAnimationCue = "stagger_in" | "count_up" | "spotlight" | "distribute" | "reveal_answer";
+
 export interface StoryboardGroupConfig {
   label: string;
   items: string[];
   sum?: string;
+}
+
+export interface StoryboardEntityPositionConfig {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  kind?: "ticket" | "student" | "equation" | "constraint" | "answer" | "object";
+  emphasis?: boolean;
+  value?: string;
 }
 
 export type SceneType = "problem" | "diagram" | "solution" | "storyboard" | "answer";
@@ -79,6 +105,13 @@ export interface StoryboardSceneConfig {
   equation?: string;
   highlights?: string[];
   groups?: StoryboardGroupConfig[];
+  layoutType?: StoryboardLayoutType;
+  visualPriority?: StoryboardVisualPriority;
+  entityPositions?: StoryboardEntityPositionConfig[];
+  panelStyle?: StoryboardPanelStyle;
+  emphasisTarget?: string;
+  animationCue?: StoryboardAnimationCue;
+  captionStyle?: StoryboardCaptionStyle;
 }
 
 export interface AnswerSceneConfig {

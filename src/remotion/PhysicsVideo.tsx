@@ -1,5 +1,5 @@
 import { AbsoluteFill, Series } from "remotion";
-import { SceneConfig, AnyScene } from "@/types/scene";
+import { SceneConfig, AnyScene } from "../types/scene";
 import { FreeBodyDiagram } from "./components/FreeBodyDiagram";
 import { SolutionStep } from "./components/SolutionStep";
 import { ProblemScene } from "./components/ProblemScene";
@@ -60,6 +60,13 @@ function SceneRenderer({ scene }: { scene: AnyScene }) {
           equation={scene.equation}
           highlights={scene.highlights}
           groups={scene.groups}
+          layoutType={scene.layoutType}
+          visualPriority={scene.visualPriority}
+          entityPositions={scene.entityPositions}
+          panelStyle={scene.panelStyle}
+          emphasisTarget={scene.emphasisTarget}
+          animationCue={scene.animationCue}
+          captionStyle={scene.captionStyle}
         />
       );
     case "answer":

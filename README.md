@@ -61,7 +61,7 @@ docker compose down
 **测试 Agent 2（纯函数，无需 Gemini API Key）：**
 
 ```bash
-curl -X POST http://localhost:3000/api/generate \
+curl -X POST http://localhost:3001/api/generate \
   -H "Content-Type: application/json" \
   -d '{
     "plan": {
@@ -82,9 +82,12 @@ curl -X POST http://localhost:3000/api/generate \
 **测试 Agent 1（需要 GEMINI_API_KEY）：**
 
 ```bash
-curl -X POST http://localhost:3000/api/analyze \
+curl -X POST http://localhost:3001/api/analyze \
   -H "Content-Type: application/json" \
-  -d '{"problemText": "质量为10kg的物体放在水平面上，受到5N的水平推力，求加速度"}'
+  -d '{
+    "problemText": "有五位同学收集汽车票，他们共有3张1元，3张2元，2张5元和4张10元的车票，这五位同学每人收集的车票钱数各不相同。收集汽车票价钱最多的同学最少收集了多少元的汽车票？",
+    "referenceAnswer": "15元"
+  }'
 ```
 
 ## 部署到 Vercel

@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runTeacherAgent } from "@/agents/teacher";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting
+    const ip = getClientIp(req.headers);
+    const rl = checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "今日使用次数已达上限（每天 4 次），请明天再试" },
+        { status: 429, headers: { "X-RateLimit-Remaining": "0" } }
+      );
+    }
+
     const { problemText, imageBase64, referenceAnswer } = (await req.json()) as {
       problemText?: string;
       imageBase64?: string;
