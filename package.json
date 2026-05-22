@@ -15,6 +15,7 @@
     "@fontsource/knewave": "^5.2.7",
     "@remotion/cli": "^4.0.454",
     "@remotion/player": "^4.0.454",
+    "@remove-background-ai/rembg.js": "^1.3.1",
     "html2canvas": "^1.4.1",
     "next": "16.2.4",
     "pptxgenjs": "^4.0.1",

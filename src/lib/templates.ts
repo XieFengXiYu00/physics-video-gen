@@ -89,6 +89,33 @@ export const TEMPLATES: TemplateInfo[] = [
     } satisfies JensenHuangCeoIntroProps),
   },
   {
+    id: "LogoBrandReveal",
+    labelZh: "Logo品牌揭示",
+    labelEn: "Logo Brand Reveal",
+    descZh: "三幕式品牌片头：脉冲光环 → Logo圆形揭示 → 品牌名扫光+倾斜高亮块+副标语逐字淡入",
+    descEn: "Three-act brand intro: pulse rings → logo circle reveal → paint-sweep wordmark with tilted accent tile",
+    durationFrames: 210,
+    fps: 30,
+    width: 1280,
+    height: 720,
+    propsSchema: `{
+  "initials": "string — 第一幕大字冲击的品牌简称/首字母（理想2-5字符，可放品牌简写或核心词；显示空间充足）",
+  "brandName": "string — 主品牌名，扫光揭示（理想2-8字，但接受更长品牌名；显示空间充足，宽屏布局）",
+  "accentWord": "string — 高亮块词，倾斜弹入显示在品牌名右侧（理想1-6字，可放短slogan/品类词；不要为了字数砍掉用户实词）",
+  "tagline": "string — 副标语，逐字淡入显示在品牌名下方（理想5-25字，品牌slogan/定位语/补充说明；可承载较多文字）",
+  "accentColor": "string — 主题高亮色，十六进制，推荐高饱和色如 #f39200",
+  "backgroundColor": "string — 背景色，十六进制，建议深色如 #050505"
+}`,
+    defaultProps: JSON.stringify({
+      initials: "AI",
+      brandName: "PHYSIQ",
+      accentWord: "AI",
+      tagline: "让每一帧都有意义",
+      accentColor: "#f39200",
+      backgroundColor: "#050505",
+    } satisfies LogoBrandRevealProps),
+  },
+  {
     id: "GlitchHtmlCanvasSample",
     labelZh: "故障艺术",
     labelEn: "Glitch Art",
@@ -227,33 +254,6 @@ export const TEMPLATES: TemplateInfo[] = [
       accentColor: "#3b82f6",
       backgroundColor: "#030712",
     } satisfies ParticleWaveTitleProps),
-  },
-  {
-    id: "LogoBrandReveal",
-    labelZh: "Logo品牌揭示",
-    labelEn: "Logo Brand Reveal",
-    descZh: "三幕式品牌片头：脉冲光环 → Logo圆形揭示 → 品牌名扫光+倾斜高亮块+副标语逐字淡入",
-    descEn: "Three-act brand intro: pulse rings → logo circle reveal → paint-sweep wordmark with tilted accent tile",
-    durationFrames: 210,
-    fps: 30,
-    width: 1280,
-    height: 720,
-    propsSchema: `{
-  "initials": "string — 第一幕大字冲击的品牌简称/首字母（理想2-5字符，可放品牌简写或核心词；显示空间充足）",
-  "brandName": "string — 主品牌名，扫光揭示（理想2-8字，但接受更长品牌名；显示空间充足，宽屏布局）",
-  "accentWord": "string — 高亮块词，倾斜弹入显示在品牌名右侧（理想1-6字，可放短slogan/品类词；不要为了字数砍掉用户实词）",
-  "tagline": "string — 副标语，逐字淡入显示在品牌名下方（理想5-25字，品牌slogan/定位语/补充说明；可承载较多文字）",
-  "accentColor": "string — 主题高亮色，十六进制，推荐高饱和色如 #f39200",
-  "backgroundColor": "string — 背景色，十六进制，建议深色如 #050505"
-}`,
-    defaultProps: JSON.stringify({
-      initials: "AI",
-      brandName: "PHYSIQ",
-      accentWord: "AI",
-      tagline: "让每一帧都有意义",
-      accentColor: "#f39200",
-      backgroundColor: "#050505",
-    } satisfies LogoBrandRevealProps),
   },
   {
     // ────────────────────────────────────────────────────────────────

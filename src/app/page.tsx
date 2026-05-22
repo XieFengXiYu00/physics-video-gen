@@ -30,7 +30,7 @@ function AppShell() {
   const [wizardExpanded, setWizardExpanded] = useState(true);
   const hasAutoCollapsed = useRef(false);
   // LLM provider selection
-  const [provider, setProvider] = useState<Provider>("gemini");
+  const [provider, setProvider] = useState<Provider>("deepseek");
   // Uploaded reference image — kept at AppShell so it can be shown in the
   // wizard area (next to style/color/ratio boxes) instead of inside ChatInput.
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -68,6 +68,7 @@ function AppShell() {
     }
     if (msgs.length === 0) {
       hasAutoCollapsed.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWizardExpanded(true);
     }
   }, [store.activeSession?.messages]);

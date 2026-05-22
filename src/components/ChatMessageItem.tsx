@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ChatMessage } from "@/lib/useChatStore";
 import { useLang } from "@/lib/LangContext";
 import { Player, PlayerRef } from "@remotion/player";
@@ -18,7 +18,7 @@ import { CompositeVideo } from "@/remotion/CompositeVideo";
 import html2canvas from "html2canvas";
 
 // Map templateId → React component
-const TEMPLATE_COMPONENTS: Record<string, React.ComponentType<any>> = {
+const TEMPLATE_COMPONENTS: Record<string, React.ComponentType<Record<string, unknown>>> = {
   SplitBrandIntro,
   JensenHuangCeoIntro,
   GlitchHtmlCanvasSample,

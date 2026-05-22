@@ -4,21 +4,16 @@
  * 输入: { image: "data:image/jpeg;base64,..." | "<base64>" }
  * 输出: { dataUrl: "data:image/png;base64,..." }
  *
- * 实现: 通过 child_process.spawn 调用 scripts/process_portrait.py（rembg）。
- * 容器中需要安装 Python + rembg（参见 Dockerfile）。
+ * 实现: 通过 @remove-background-ai/rembg.js 调用 rembg.com API。
+ * 需要在环境变量中配置 REMBG_API_KEY。
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { spawn } from "node:child_process";
-import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { rembg } from "@remove-background-ai/rembg.js";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-const SCRIPT_PATH = "scripts/process_portrait.py";
 
 function stripDataUrl(input: string): { base64: string; mime: string } {
   const m = input.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
@@ -27,24 +22,10 @@ function stripDataUrl(input: string): { base64: string; mime: string } {
   return { mime: "image/jpeg", base64: input };
 }
 
-function runPython(args: string[], cwd: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn("python3", args, {
-      cwd,
-      env: { ...process.env, PYTHONUNBUFFERED: "1" },
-    });
-    let stderr = "";
-    proc.stdout.on("data", (d) => process.stdout.write(d));
-    proc.stderr.on("data", (d) => {
-      stderr += d.toString();
-      process.stderr.write(d);
-    });
-    proc.on("close", (code) => {
-      if (code === 0) resolve("");
-      else reject(new Error(`python exited with ${code}: ${stderr}`));
-    });
-    proc.on("error", reject);
-  });
+function normalizeDataUrl(base64Image: string): string {
+  return base64Image.startsWith("data:")
+    ? base64Image
+    : `data:image/png;base64,${base64Image}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -63,6 +44,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "缺少 image 字段" }, { status: 400 });
     }
 
+    const apiKey = process.env.REMBG_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "请配置 REMBG_API_KEY 环境变量" },
+        { status: 500 }
+      );
+    }
+
     const { base64 } = stripDataUrl(image);
     const buf = Buffer.from(base64, "base64");
     if (buf.length === 0) {
@@ -72,22 +61,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "图片过大（>8MB）" }, { status: 400 });
     }
 
-    const workDir = await mkdtemp(join(tmpdir(), "portrait-"));
-    const inputPath = join(workDir, "in.jpg");
-    const outputPath = join(workDir, "out.png");
+    const { base64Image } = await rembg({
+      apiKey,
+      inputImage: { base64 },
+      onUploadProgress: () => {},
+      onDownloadProgress: () => {},
+      options: {
+        returnBase64: true,
+        format: "png",
+        w: 0,
+        h: 0,
+      },
+    });
 
-    try {
-      await writeFile(inputPath, buf);
-      await runPython(
-        [SCRIPT_PATH, inputPath, outputPath, "--model", "u2netp"],
-        process.cwd()
-      );
-      const result = await readFile(outputPath);
-      const dataUrl = `data:image/png;base64,${result.toString("base64")}`;
-      return NextResponse.json({ dataUrl, bytes: result.length });
-    } finally {
-      await rm(workDir, { recursive: true, force: true }).catch(() => {});
+    if (!base64Image) {
+      throw new Error("rembg API 未返回处理后的图片");
     }
+
+    const dataUrl = normalizeDataUrl(base64Image);
+    const outputBase64 = dataUrl.split(",")[1] ?? "";
+    return NextResponse.json({
+      dataUrl,
+      bytes: Buffer.byteLength(outputBase64, "base64"),
+    });
   } catch (err) {
     console.error("[/api/process-portrait]", err);
     const message = err instanceof Error ? err.message : "处理失败";

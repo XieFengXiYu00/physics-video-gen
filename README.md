@@ -8,20 +8,22 @@ AI 双 Agent 驱动，把初高中理科题目（物理 / 数学 / 化学）的�
 
 ## 快速开始（本地）
 
-### 1. 配置 Gemini API Key
+### 1. 配置 API Key
 
 编辑 `.env.local`：
 
 ```env
-GEMINI_API_KEY=AIzaSy.....
-# 可选：默认 gemini-flash-latest
+DEEPSEEK_API_KEY=sk-.....
+REMBG_API_KEY=你的 rembg.com API Key
+# 可选：如果切换到 Gemini
+# GEMINI_API_KEY=AIzaSy.....
 # GEMINI_MODEL=gemini-flash-latest
 # 可选：公司网络代理
 # HTTPS_PROXY=http://10.158.100.2:8080
 # HTTP_PROXY=http://10.158.100.2:8080
 ```
 
-去 [Google AI Studio](https://aistudio.google.com/apikey) 领免费 Key（Gemini Flash 有慷慨的免费额度）。
+去 [DeepSeek](https://platform.deepseek.com/) 配置默认生成模型 Key；人像去背景需要在 [rembg.com](https://www.rembg.com/en/api-usage) 获取 `REMBG_API_KEY`。
 
 ### 2. 启动（本地 npm）
 
@@ -92,7 +94,7 @@ curl -X POST http://localhost:3001/api/analyze \
 
 ## 部署到 Vercel
 
-完全兼容，零配置。本地 Docker 开发和 Vercel 云部署**互不影响**：
+配置好环境变量后可部署。本地 Docker 开发和 Vercel 云部署**互不影响**：
 
 1. 把代码 push 到 GitHub
    ```bash
@@ -100,7 +102,9 @@ curl -X POST http://localhost:3001/api/analyze \
    ```
 2. 去 [vercel.com/new](https://vercel.com/new) 选这个仓库
 3. **Environment Variables** 填：
-   - `GEMINI_API_KEY` = 你的 Key
+   - `DEEPSEEK_API_KEY` = 你的 DeepSeek Key
+   - `REMBG_API_KEY` = 你的 rembg.com API Key
+   - `GEMINI_API_KEY` = 你的 Gemini Key（可选，切换到 Gemini 时需要）
    - （Vercel 服务器走公网，不需要 `HTTPS_PROXY`）
 4. Deploy
 

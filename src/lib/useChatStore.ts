@@ -103,19 +103,13 @@ function saveSessions(sessions: ChatSession[]) {
 }
 
 export function useChatStore() {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
+  // Lazy initializers read from localStorage once on mount, avoiding setState in an effect.
+  const [sessions, setSessions] = useState<ChatSession[]>(() => loadSessions());
+  const [activeId, setActiveId] = useState<string | null>(() => {
     const s = loadSessions();
-    setSessions(s);
-    if (s.length > 0) {
-      setActiveId(s[0].id);
-    }
-    setLoaded(true);
-  }, []);
+    return s.length > 0 ? s[0].id : null;
+  });
+  const [loaded, setLoaded] = useState(true);
 
   // Persist on change
   useEffect(() => {

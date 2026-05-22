@@ -550,7 +550,7 @@ function buildAutoSelectPrompt(
 
 ### 类型 A：极短品牌/标题型
 特征：用户输入是品牌名、产品名、人物头衔、slogan、口号、片头字幕等"短词组"（≤ 30 字、单句、无标点/换行）。
-适用模板：SplitBrandIntro / JensenHuangCeoIntro / NeonTitle / LogoBrandReveal / ParticleWaveTitle / MinimalQuote / TypewriterText / CountdownTimer / GlitchHtmlCanvasSample
+适用模板：SplitBrandIntro / JensenHuangCeoIntro / LogoBrandReveal / NeonTitle / ParticleWaveTitle / MinimalQuote / TypewriterText / CountdownTimer / GlitchHtmlCanvasSample
 
 ### 类型 B：解说/教学/概念讲解/产品详解型 ⭐
 特征：需要"展开讲清楚"的内容；含多句、多个要点、超过 30-40 字。

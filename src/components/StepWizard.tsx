@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useLang } from "@/lib/LangContext";
 import { WIZARD_STEPS } from "@/lib/wizard-options";
 
