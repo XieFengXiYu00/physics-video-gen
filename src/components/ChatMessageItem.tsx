@@ -18,7 +18,8 @@ import { CompositeVideo } from "@/remotion/CompositeVideo";
 import html2canvas from "html2canvas";
 
 // Map templateId → React component
-const TEMPLATE_COMPONENTS: Record<string, React.ComponentType<Record<string, unknown>>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TEMPLATE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   SplitBrandIntro,
   JensenHuangCeoIntro,
   GlitchHtmlCanvasSample,
